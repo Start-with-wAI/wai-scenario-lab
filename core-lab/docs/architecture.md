@@ -38,3 +38,11 @@ To ensure high-risk or low-quality content never reaches the user, a determinist
 
 ### 4. Role of MCP Servers
 Model Context Protocol (MCP) servers (e.g., `roi_calculator_server.py`) expose deterministic python calculation tools to Agent 3. This decouples arithmetic from the LLM, preventing hallucinated calculations while keeping the core agent logic clean and focused.
+
+## Phase 4 Additions
+Phase 4 introduced:
+*   **Deterministic Safety Utilities**: Pre-filters and sanitizes inputs/outputs (PII/confidentiality redaction, domain policy validation, prohibited automation detection).
+*   **Safe Scenario Config MCP Server**: Exposes resources and tools grounded strictly in the active configuration file, entirely decoupled from ROI or financial metrics.
+*   **Scenario Brief Assembler**: Combines validated outputs into a single payload while ensuring `REVISE` and `BLOCKED` requests withhold sensitive sections.
+*   **Comprehensive Test Coverage**: Unit and integration tests covering safety detection, MCP servers, brief assembly, and overall workflow pipeline routing.
+

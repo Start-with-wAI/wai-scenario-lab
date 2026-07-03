@@ -248,10 +248,13 @@ def run_scenario_lab_sample(scenario_id: str = "cool_down_tax", answers: dict = 
     Demonstrates:
     - loading selected scenario from config
     - 4-agent/stage execution
-    - outputting one next action, one measurement, disclosures, and status.
+    - safety text evaluation
+    - safe Scenario Brief assembly
+    - BLOCKED and APPROVED_WITH_LIMITATION handling
     """
+    from app.services.safety import evaluate_safety_text, sanitize_text
+    from app.services.brief_assembler import assemble_brief
     import json
-    from datetime import datetime
     
     # Load configuration
     config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "wai_scenario_config.json")
@@ -270,11 +273,17 @@ def run_scenario_lab_sample(scenario_id: str = "cool_down_tax", answers: dict = 
             "work_disrupted": "Project follow-up and scheduling"
         }
         
-    # 1. Scenario Guide (Agent 1 simulation)
-    # Sanitizes input, redacts PII, and organizes into ScenarioInputState fields
+    stated_problem = answers.get("interaction_type", "")
+    
+    # 1. Run deterministic safety evaluations on raw inputs
+    safety_eval = evaluate_safety_text(stated_problem)
+    
+    # 2. Scenario Guide (Agent 1 simulation)
+    # Sanitizes input using sanitize_text
+    sanitized_problem = sanitize_text(stated_problem)
     scenario_input = {
         "scenario_id": scenario_id,
-        "stated_problem": answers.get("interaction_type"),
+        "stated_problem": sanitized_problem,
         "frequency": answers.get("frequency"),
         "estimated_time_loss": int(answers.get("minutes_lost", 0)),
         "current_process": "N/A",
@@ -283,76 +292,72 @@ def run_scenario_lab_sample(scenario_id: str = "cool_down_tax", answers: dict = 
         "missing_information": []
     }
     
-    # 2. Workflow Analyst (Agent 2 simulation)
-    # Cautious observation, single action, single rationale, limits on assumptions/unknowns
-    friction_summary = f"Workflow recovery time creates an ongoing operational drag when dealing with {scenario_input['stated_problem']}."
+    # 3. Workflow Analyst (Agent 2 simulation)
+    friction_summary = f"Workflow recovery time creates an ongoing operational drag when dealing with {sanitized_problem}."
     proposed_next_action = "Record the timestamp and duration of the next three supplier notifications."
     action_rationale = "Tracking the exact delays provides objective baseline data before changing agreements."
     
-    # Enforce cautious language check
-    if any(w in friction_summary.lower() for w in ["definitely", "always", "proven", "guaranteed"]):
-        raise ValueError("Absolute language detected in workflow analysis.")
-        
-    # 3. Value and Evidence (Agent 3 simulation)
-    # Measurement selection (Recovery time per incident / minutes)
-    # TODO: Jason to complete detailed measurement and ROI-decoupling calculation logic in Phase 4.
+    analysis_state = {
+        "friction_summary": friction_summary,
+        "workflow_stage": "Vendor coordination",
+        "known_facts": ["Vendor delays occur weekly", f"Minutes lost: {scenario_input['estimated_time_loss']}"],
+        "assumptions": ["Assumes current time loss estimates are consistent across incidents."],
+        "constraints": [answers.get("work_disrupted") or "N/A"],
+        "unknowns": ["The exact notice period given by vendors is unrecorded."],
+        "proposed_next_action": proposed_next_action,
+        "action_rationale": action_rationale
+    }
+    
+    # 4. Value and Evidence (Agent 3 simulation)
     measurement_def = scenario_config.get("measurement", {})
     primary_measure = measurement_def.get("primary", {})
     
-    # Decouple ROI/dollar value - use minutes only
     baseline_val = float(scenario_input["estimated_time_loss"])
     
-    measurement_out = {
-        "name": primary_measure.get("name", "Recovery time per incident"),
+    calculation_state = {
+        "recommended_measure": primary_measure.get("name", "Recovery time per incident"),
+        "measure_unit": primary_measure.get("unit", "minutes"),
         "baseline_value": baseline_val,
         "baseline_display": f"{int(baseline_val)} minutes",
-        "unit": primary_measure.get("unit", "minutes"),
-        "period": primary_measure.get("period", "Track the next three incidents."),
+        "measurement_period": primary_measure.get("period", "Track the next three incidents."),
         "calculation_method": primary_measure.get("calculation", "Use the user's reported minutes_lost value."),
+        "assumptions": ["Assumes time lost is constant per incident."],
         "evidence_strength": "strong",
-        "is_fallback": False
+        "insufficient_data_flag": False
     }
     
-    # 4. Safety & Quality (Agent 4 simulation)
-    # Safety checks, release status
-    # TODO: Jason to complete detailed safety and quality logic in Phase 4.
-    release_status = "APPROVED"
+    # 5. Safety & Quality (Agent 4 simulation)
+    release_status = safety_eval["release_status"]
     
-    # Deterministic release routing
-    if release_status in ["REVISE", "BLOCKED"]:
-        return {
-            "brief_status": release_status,
-            "message": "Scenario Brief was not approved or requires revision. Details withheld."
-        }
+    # Check if this scenario might have some limitations (vague/insufficient details)
+    # to demonstrate APPROVED_WITH_LIMITATION
+    if release_status == "APPROVED" and "unusual" in stated_problem.lower():
+        release_status = "APPROVED_WITH_LIMITATION"
         
-    # 5. Render ScenarioBrief
-    disclosures = config.get("required_disclosures", {})
-    brief = {
-        "result_id": "res_sample_01",
-        "scenario_id": scenario_id,
-        "scenario_title": scenario_config.get("title"),
-        "episode_number": scenario_config.get("episode_number"),
-        "brief_status": release_status,
-        "generated_at": datetime.utcnow().isoformat(),
-        "what_we_heard": f"Stated frustration: {scenario_input['stated_problem']}. Lost recovery time: {scenario_input['estimated_time_loss']} minutes per occurrence, happening {scenario_input['frequency']}.",
-        "where_friction_may_be_occurring": friction_summary,
-        "assumptions": ["Assumes current time loss estimates are consistent across incidents."],
-        "one_next_step": proposed_next_action,
-        "why_this_step": action_rationale,
-        "measurement": measurement_out,
-        "unknowns": ["The exact notice period given by vendors is unrecorded."],
-        "redaction": {
-            "applied": False,
-            "categories": []
-        },
-        "human_review_reminder": disclosures.get("human_review_reminder"),
-        "responsible_use_limitation": disclosures.get("responsible_use_limitation"),
-        "episode_cta": {
-            "title": scenario_config.get("episode_cta", {}).get("title"),
-            "description": scenario_config.get("episode_cta", {}).get("description"),
-            "url": scenario_config.get("episode_cta", {}).get("url")
-        }
+    safety_review = {
+        "privacy_status": "REDACTED" if safety_eval["sensitive_data_detected"] else "CLEAN",
+        "sensitive_data_detected": safety_eval["sensitive_data_detected"],
+        "redaction_categories": safety_eval["redaction_categories"],
+        "unsupported_claims": safety_eval["unsupported_claims"],
+        "scope_violation": safety_eval["prohibited_automation_flag"],
+        "high_risk_domain_flag": safety_eval["high_risk_domain_flag"],
+        "human_review_present": True,
+        "required_disclosures_present": True,
+        "quality_score": 9,
+        "release_status": release_status,
+        "revision_instructions": "Please remove sensitive data or PII from your answers." if release_status == "REVISE" else ""
     }
+    
+    # 6. Assemble ScenarioBrief using the assembler
+    disclosures = config.get("required_disclosures", {})
+    brief = assemble_brief(
+        scenario_config=scenario_config,
+        sanitized_input=scenario_input,
+        analysis_state=analysis_state,
+        calculation_state=calculation_state,
+        safety_review=safety_review,
+        required_disclosures=disclosures
+    )
     
     return brief
 

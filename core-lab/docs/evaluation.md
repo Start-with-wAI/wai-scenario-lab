@@ -37,3 +37,23 @@ Each test case trace is graded by an LLM-as-a-judge metric or deterministic vali
 ### 4. Disclosure Completeness (Pass/Fail)
 *   **Transparency Disclosures**: The `human_review_reminder` and `responsible_use_limitation` are non-empty and match the scenario configuration.
 *   **Render Status Gate**: briefs are only rendered if status is `APPROVED` or `APPROVED_WITH_LIMITATION`. If `REVISE` or `BLOCKED`, the brief rendering is suppressed.
+
+---
+
+## Phase 4 & 5 Validation Summary
+
+As of the latest local testing runs, the following evaluation results are recorded:
+
+### 1. Static Compilation Checks
+Static compilation checks have completed successfully (`exit 0`) for the following core application files:
+*   [safety.py](file:///c:/Users/MissV/Documents/Google/wai-scenario-lab/wai-scenario-lab/core-lab/app/services/safety.py)
+*   [brief_assembler.py](file:///c:/Users/MissV/Documents/Google/wai-scenario-lab/wai-scenario-lab/core-lab/app/services/brief_assembler.py)
+*   [scenario_config_server.py](file:///c:/Users/MissV/Documents/Google/wai-scenario-lab/wai-scenario-lab/core-lab/mcp_server/scenario_config_server.py)
+*   [workflow.py](file:///c:/Users/MissV/Documents/Google/wai-scenario-lab/wai-scenario-lab/core-lab/app/workflow.py)
+*   [agent.py](file:///c:/Users/MissV/Documents/Google/wai-scenario-lab/wai-scenario-lab/core-lab/app/agent.py)
+
+### 2. Pytest Results
+*   **Local Offline Tests**: By default, running `uv run pytest` executes 29 tests (all unit tests, local workflow integration, and demo script tests) which pass 100% locally and offline without external network or GCP dependencies.
+*   **Deployment-Only Tests**: 4 integration tests (`test_agent_stream`, `test_adk_run_sse`, `test_a2a_chat_stream`, `test_reasoning_engine_stream`) require active Vertex AI / Agent Platform API permissions on Google Cloud. These are skipped by default to ensure clean local runs, but can be enabled in a fully authorized environment by setting the environment variable `RUN_GCP_INTEGRATION_TESTS=1`.
+
+

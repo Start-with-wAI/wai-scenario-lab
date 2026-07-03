@@ -1,0 +1,633 @@
+﻿{
+  "app": {
+    "name": "wAI Scenario Lab",
+    "version": "0.2.0",
+    "copyright_year": 2026,
+    "default_locale": "en-US",
+    "estimated_completion_minutes": "3-5",
+    "requires_login": false,
+    "persists_user_history": false,
+    "max_clarification_questions": 1,
+    "owner": "Verónica"
+  },
+  "shared_ui": {
+    "landing_headline": "Turn one business frustration into one clear next step.",
+    "landing_supporting_copy": "The wAI Scenario Lab helps micro business owners examine a common workflow challenge, identify what may be causing the friction, and choose one practical thing to measure or try next.",
+    "primary_cta": "Explore a Scenario",
+    "question_submit_label": "Analyze My Scenario",
+    "change_scenario_label": "Choose a Different Scenario",
+    "start_over_label": "Start Over",
+    "how_it_works_label": "How this works",
+    "privacy_notice": "Do not enter names, customer details, account information, confidential documents, passwords, health information, or other sensitive information.",
+    "transparency_notice": "This lab uses AI to analyze the answers you provide. It is an educational prototype, not legal, financial, medical, tax, employment, lending, housing, insurance, or regulatory compliance advice. You remain responsible for all decisions.",
+    "processing_heading": "Building your Scenario Brief",
+    "processing_steps": [
+      "Reviewing the information provided",
+      "Identifying the workflow friction",
+      "Selecting a useful measurement",
+      "Checking the response for safety and quality"
+    ],
+    "clarification_heading": "One quick clarification",
+    "clarification_explanation": "We need one more detail to avoid making an unsupported assumption.",
+    "clarification_continue_label": "Continue",
+    "clarification_skip_label": "Skip and Use My Current Answers",
+    "error_messages": {
+      "generic_input": "Please review the highlighted field.",
+      "form_missing_answers": "Please complete the highlighted questions before continuing.",
+      "form_multiple_errors": "Some answers need attention. Review the highlighted fields and make the requested corrections.",
+      "api_failure": "We could not complete the Scenario Brief. Your answers are still available, so you can try again.",
+      "processing_timeout": "The analysis is taking longer than expected. You can try again without re-entering your answers.",
+      "blocked_request": "This request is outside the Scenario Lab's scope. Please remove sensitive details and describe an ordinary workflow problem in general terms."
+    }
+  },
+  "shared_rules": {
+    "required_answers_per_scenario": 4,
+    "max_text_length": 500,
+    "numeric_min_default": 0,
+    "numeric_max_default": 480,
+    "one_action_limit": true,
+    "human_review_required": true,
+    "allow_file_uploads": false,
+    "allow_external_account_connections": false,
+    "allow_automatic_actions": false,
+    "allow_regenerate_without_changed_input": false,
+    "allow_back_navigation_before_submission": true,
+    "allow_start_over": true,
+    "max_agent_retry_attempts": 1,
+    "max_revision_attempts": 1,
+    "owner": "Verónica",
+    "high_risk_domains_placeholder_for_jason": [
+      "legal",
+      "medical",
+      "mental_health",
+      "tax",
+      "employment",
+      "lending",
+      "housing",
+      "insurance",
+      "regulatory_compliance"
+    ],
+    "sensitive_data_categories_placeholder_for_jason": [
+      "person_name",
+      "company_name",
+      "email_address",
+      "phone_number",
+      "account_number",
+      "password",
+      "health_information",
+      "financial_information",
+      "contracts",
+      "confidential_business_information"
+    ],
+    "release_status_values_placeholder_for_jason": [
+      "APPROVED",
+      "APPROVED_WITH_LIMITATION",
+      "REVISE",
+      "BLOCKED"
+    ]
+  },
+  "output_constraints": {
+    "what_we_heard_max_words": 75,
+    "where_friction_may_be_occurring_max_words": 60,
+    "assumptions_max_items": 2,
+    "assumption_max_words_each": 30,
+    "one_next_step_max_words": 50,
+    "why_this_step_max_words": 35,
+    "unknowns_max_items": 3,
+    "unknown_max_words_each": 30,
+    "exactly_one_action": true,
+    "exactly_one_measurement": true,
+    "owner": "Verónica"
+  },
+  "agent_interfaces": {
+    "agent_1_scenario_guide": {
+      "owner": "Verónica",
+      "required_fields": [
+        "scenario_id",
+        "stated_problem",
+        "frequency",
+        "estimated_time_loss",
+        "current_process",
+        "primary_constraint",
+        "available_tools",
+        "missing_information"
+      ]
+    },
+    "agent_2_workflow_analysis": {
+      "owner": "Verónica",
+      "required_fields": [
+        "friction_summary",
+        "workflow_stage",
+        "known_facts",
+        "assumptions",
+        "constraints",
+        "unknowns",
+        "proposed_next_action",
+        "action_rationale"
+      ]
+    },
+    "agent_3_value_and_evidence_placeholder": {
+      "owner": "Jason",
+      "status": "TO_BE_COMPLETED_BY_JASON",
+      "required_fields": [
+        "recommended_measure",
+        "measure_unit",
+        "baseline_value",
+        "calculation_method",
+        "assumptions",
+        "evidence_strength",
+        "measurement_period",
+        "insufficient_data_flag"
+      ]
+    },
+    "agent_4_safety_and_quality_placeholder": {
+      "owner": "Jason",
+      "status": "TO_BE_COMPLETED_BY_JASON",
+      "required_fields": [
+        "privacy_status",
+        "sensitive_data_detected",
+        "unsupported_claims",
+        "scope_violation",
+        "high_risk_domain_flag",
+        "human_review_present",
+        "required_disclosures_present",
+        "quality_score",
+        "release_status",
+        "revision_instructions"
+      ]
+    }
+  },
+  "required_disclosures": {
+    "human_review_reminder": "Use this brief as a starting point. You remain responsible for deciding whether the suggested action fits your business, customers, tools, and obligations.",
+    "responsible_use_limitation": "This educational prototype does not provide legal, medical, mental health, tax, financial planning, employment, lending, housing, insurance, or regulatory compliance advice.",
+    "approved_with_limitation_banner_placeholder_for_jason": "Use with caution: This brief is based on incomplete or uncertain information. Treat the measurement as an observation prompt rather than a conclusion."
+  },
+  "scenario_brief_schema": {
+    "owner": "Verónica",
+    "result_id": "string",
+    "scenario_id": "string",
+    "scenario_title": "string",
+    "episode_number": "string",
+    "brief_status_placeholder_for_jason": "APPROVED|APPROVED_WITH_LIMITATION",
+    "generated_at": "datetime",
+    "what_we_heard": "string",
+    "where_friction_may_be_occurring": "string",
+    "assumptions": [
+      "string"
+    ],
+    "one_next_step": "string",
+    "why_this_step": "string",
+    "measurement_placeholder_for_jason": {
+      "name": "string",
+      "baseline_value": "number|string|null",
+      "baseline_display": "string",
+      "unit": "string",
+      "period": "string",
+      "calculation_method": "string",
+      "evidence_strength": "strong|partial|insufficient",
+      "is_fallback": "boolean"
+    },
+    "unknowns": [
+      "string"
+    ],
+    "redaction_placeholder_for_jason": {
+      "applied": "boolean",
+      "categories": [
+        "string"
+      ]
+    },
+    "human_review_reminder": "string",
+    "responsible_use_limitation": "string",
+    "episode_cta": {
+      "title": "string",
+      "description": "string",
+      "url": "string"
+    }
+  },
+  "mcp_resources": {
+    "owner": "Shared",
+    "scenario_list": "scenario://list",
+    "scenario_questions": "scenario://{scenario_id}/questions",
+    "scenario_measurement_placeholder_for_jason": "scenario://{scenario_id}/measurement",
+    "scenario_metadata": "scenario://{scenario_id}/metadata"
+  },
+  "scenarios": {
+    "cool_down_tax": {
+      "scenario_id": "cool_down_tax",
+      "test_id": "id_cool_down_tax_01",
+      "episode_number": "01",
+      "title": "The Cool Down Tax",
+      "short_description": "When one stressful business interaction consumes far more time and attention than it should.",
+      "context": "This scenario helps you examine a repeated business interaction that creates an outsized recovery cost. Your answers will be used to identify the friction, suggest one practical next step, and select one useful measurement.",
+      "estimated_completion_minutes": "3-5",
+      "measurement_preview": "Recovery time per incident",
+      "questions": [
+        {
+          "id": "interaction_type",
+          "order": 1,
+          "label": "What type of business interaction usually triggers this frustration?",
+          "help_text": "Example: a client complaint, vendor delay, unexpected change, or difficult email.",
+          "type": "text",
+          "required": true,
+          "max_length": 500,
+          "validation": {
+            "required": "Please describe the type of business interaction that usually causes the frustration. A general description is enough.",
+            "whitespace_only": "Please enter a brief response rather than spaces only.",
+            "too_vague": "Please add a little more detail, such as whether this involves a client complaint, vendor delay, unexpected change, or difficult message.",
+            "too_long": "Please shorten your description to 500 characters or fewer.",
+            "sensitive_information": "Please remove names, email addresses, company details, or confidential information. Describe only the general type of interaction."
+          },
+          "clarification": {
+            "trigger": "answer_is_vague",
+            "prompt": "Which description best matches the interaction: a client complaint, vendor delay, unexpected change, difficult message, or something else?"
+          }
+        },
+        {
+          "id": "frequency",
+          "order": 2,
+          "label": "About how often does this happen?",
+          "type": "radio",
+          "required": true,
+          "options": [
+            {
+              "value": "less_than_monthly",
+              "label": "Less than once a month"
+            },
+            {
+              "value": "one_to_three_monthly",
+              "label": "One to three times a month"
+            },
+            {
+              "value": "weekly",
+              "label": "About once a week"
+            },
+            {
+              "value": "several_weekly",
+              "label": "Several times a week"
+            }
+          ],
+          "validation": {
+            "required": "Please estimate how often this occurs. A rough estimate is enough.",
+            "selection_reminder": "Choose the option that most closely reflects your experience."
+          }
+        },
+        {
+          "id": "minutes_lost",
+          "order": 3,
+          "label": "Approximately how many minutes of productive time do you lose afterward?",
+          "type": "number",
+          "required": true,
+          "unit": "minutes",
+          "min": 0,
+          "max": 480,
+          "step": 1,
+          "validation": {
+            "required": "Please enter your best estimate of the productive time lost after one incident.",
+            "non_numeric": "Please enter the number of minutes using digits only.",
+            "below_min": "Please enter a value of 0 minutes or more.",
+            "above_max": "Please enter a value between 0 and 480 minutes.",
+            "whole_number": "Please enter a whole number of minutes."
+          },
+          "clarification": {
+            "trigger": "missing_or_non_numeric",
+            "prompt": "What is your best estimate of the productive time lost after one incident, in minutes?"
+          }
+        },
+        {
+          "id": "work_disrupted",
+          "order": 4,
+          "label": "What work is usually delayed or disrupted?",
+          "help_text": "Short text response.",
+          "type": "textarea",
+          "required": true,
+          "max_length": 500,
+          "validation": {
+            "required": "Please name the work that is usually delayed or disrupted. A brief answer is enough.",
+            "whitespace_only": "Please enter a brief response rather than spaces only.",
+            "too_vague": "Please identify at least one affected task, such as client follow-up, scheduling, billing, planning, or project work.",
+            "too_long": "Please shorten your response to 500 characters or fewer.",
+            "sensitive_information": "Please remove customer names, project names, or confidential details. Describe the affected work in general terms."
+          }
+        }
+      ],
+      "measurement_placeholder_for_jason": {
+        "status": "TO_BE_REVIEWED_BY_JASON",
+        "primary": {
+          "name": "Recovery time per incident",
+          "unit": "minutes",
+          "source_fields": [
+            "minutes_lost"
+          ],
+          "calculation": "Use the user's reported minutes_lost value.",
+          "period": "Track the next three incidents."
+        },
+        "fallback": {
+          "name": "Number of stressful interactions",
+          "unit": "incidents",
+          "source_fields": [
+            "frequency"
+          ],
+          "calculation": "Count incidents during the next two weeks.",
+          "period": "Two weeks."
+        }
+      },
+      "allowed_next_action_categories": [
+        "observe_and_track",
+        "create_response_pause",
+        "use_neutral_draft_process"
+      ],
+      "guardrails": {
+        "owner": "Verónica",
+        "do_not": [
+          "rewrite or send an actual message",
+          "connect to email",
+          "diagnose a mental health condition",
+          "build a full communication workflow",
+          "create a complete response library"
+        ]
+      },
+      "episode_cta": {
+        "title": "Explore Episode 01: The Cool Down Tax",
+        "description": "Hear how we move from the initial emotional reaction to a reusable business process.",
+        "url": "https://www.startwithwai.tech/episode-01-cool-down-tax/"
+      }
+    },
+    "brain_fog": {
+      "scenario_id": "brain_fog",
+      "test_id": "id_brain_fog_02",
+      "episode_number": "02",
+      "title": "Brain Fog",
+      "short_description": "When useful ideas appear at inconvenient times and disappear before they become actionable.",
+      "context": "This scenario helps you examine where useful ideas are being lost between inspiration and action. Your answers will be used to identify the capture friction, suggest one practical next step, and select one useful measurement.",
+      "estimated_completion_minutes": "3-5",
+      "measurement_preview": "Ideas captured per week",
+      "questions": [
+        {
+          "id": "idea_context",
+          "order": 1,
+          "label": "When or where do useful ideas most often occur?",
+          "help_text": "Example: while driving, between meetings, during client work, or away from your desk.",
+          "type": "text",
+          "required": true,
+          "max_length": 500,
+          "validation": {
+            "required": "Please describe when or where useful ideas most often occur.",
+            "whitespace_only": "Please enter a brief response rather than spaces only.",
+            "too_vague": "Please add a little more context, such as while driving, between meetings, during client work, or away from your desk.",
+            "too_long": "Please shorten your response to 500 characters or fewer.",
+            "sensitive_information": "Please remove names, locations tied to private individuals, or confidential business details. Describe the situation generally."
+          }
+        },
+        {
+          "id": "current_capture_method",
+          "order": 2,
+          "label": "How do you currently try to capture them?",
+          "help_text": "Example: notes app, paper notebook, voice memo, email to yourself, or memory.",
+          "type": "text",
+          "required": true,
+          "max_length": 500,
+          "validation": {
+            "required": "Please describe how you currently try to capture your ideas.",
+            "whitespace_only": "Please enter a brief response rather than spaces only.",
+            "too_vague": "Please name the method you usually use, such as a notes app, paper notebook, voice memo, email, or memory.",
+            "too_long": "Please shorten your response to 500 characters or fewer.",
+            "sensitive_information": "Please do not include private notes, account information, or the actual content of confidential ideas. Name only the capture method."
+          }
+        },
+        {
+          "id": "ideas_lost_weekly",
+          "order": 3,
+          "label": "Approximately how many useful ideas are lost or reconstructed each week?",
+          "type": "number",
+          "required": true,
+          "unit": "ideas",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "validation": {
+            "required": "Please enter your best weekly estimate.",
+            "non_numeric": "Please enter the estimated number of ideas using digits only.",
+            "below_min": "Please enter a value of 0 or more.",
+            "above_max": "Please enter a value between 0 and 100 ideas per week.",
+            "whole_number": "Please enter a whole number of ideas."
+          },
+          "clarification": {
+            "trigger": "missing_or_non_numeric",
+            "prompt": "What is your best estimate of the number of useful ideas lost or reconstructed each week?"
+          }
+        },
+        {
+          "id": "capture_constraint",
+          "order": 4,
+          "label": "What makes your current capture method difficult to use consistently?",
+          "help_text": "Short text response.",
+          "type": "textarea",
+          "required": true,
+          "max_length": 500,
+          "validation": {
+            "required": "Please describe the main obstacle that makes your current method difficult to use consistently.",
+            "whitespace_only": "Please enter a brief response rather than spaces only.",
+            "too_vague": "Please add one specific obstacle, such as too many steps, the wrong device, forgetting to review notes, or being unable to type safely.",
+            "too_long": "Please shorten your response to 500 characters or fewer.",
+            "sensitive_information": "Please remove private business details or the content of confidential ideas. Describe only the general obstacle."
+          },
+          "clarification": {
+            "trigger": "answer_is_vague",
+            "prompt": "What is the main reason your current capture method fails: too many steps, the wrong device, forgetting to review it, or something else?"
+          }
+        }
+      ],
+      "measurement_placeholder_for_jason": {
+        "status": "TO_BE_REVIEWED_BY_JASON",
+        "primary": {
+          "name": "Ideas successfully captured per week",
+          "unit": "ideas",
+          "source_fields": [
+            "ideas_lost_weekly"
+          ],
+          "calculation": "Track captured and lost ideas for one week, then compare with the user's baseline estimate.",
+          "period": "One week."
+        },
+        "fallback": {
+          "name": "Capture attempts completed",
+          "unit": "attempts",
+          "source_fields": [
+            "current_capture_method"
+          ],
+          "calculation": "Count each successful use of the chosen capture method.",
+          "period": "One week."
+        }
+      },
+      "allowed_next_action_categories": [
+        "reduce_capture_steps",
+        "use_existing_device",
+        "test_single_capture_method"
+      ],
+      "guardrails": {
+        "owner": "Verónica",
+        "do_not": [
+          "record audio",
+          "transcribe speech",
+          "connect to email or project-management accounts",
+          "build a full capture automation",
+          "store private ideas or business information"
+        ]
+      },
+      "episode_cta": {
+        "title": "Explore Episode 02: Brain Fog",
+        "description": "Explore practical ways to capture an idea before it disappears.",
+        "url": "https://www.startwithwai.tech/episode-02-brain-fog/"
+      }
+    },
+    "blank_page": {
+      "scenario_id": "blank_page",
+      "test_id": "id_blank_page_03",
+      "episode_number": "03",
+      "title": "The Blank Page",
+      "short_description": "When starting business content takes longer than producing the content itself.",
+      "context": "This scenario helps you examine where content creation stalls before a usable draft begins. Your answers will be used to identify the starting friction, suggest one practical next step, and select one useful measurement.",
+      "estimated_completion_minutes": "3-5",
+      "measurement_preview": "Time to first usable outline",
+      "questions": [
+        {
+          "id": "content_type",
+          "order": 1,
+          "label": "What kind of business content are you trying to create?",
+          "help_text": "Example: a social post, email, article, proposal, presentation, or website copy.",
+          "type": "text",
+          "required": true,
+          "max_length": 500,
+          "validation": {
+            "required": "Please name the type of business content you are trying to create.",
+            "whitespace_only": "Please enter a brief response rather than spaces only.",
+            "too_vague": "Please identify a content type, such as a social post, email, article, proposal, presentation, or website copy.",
+            "too_long": "Please shorten your response to 500 characters or fewer.",
+            "sensitive_information": "Please remove customer names, contract details, or confidential project information. Name only the general type of content."
+          }
+        },
+        {
+          "id": "source_material",
+          "order": 2,
+          "label": "Where does the useful source information already exist?",
+          "help_text": "Example: emails, notes, conversations, presentations, past posts, or nowhere yet.",
+          "type": "text",
+          "required": true,
+          "max_length": 500,
+          "validation": {
+            "required": "Please describe where the useful source information currently exists.",
+            "whitespace_only": "Please enter a brief response rather than spaces only.",
+            "too_vague": "Please identify a source, such as emails, notes, conversations, presentations, past posts, or nowhere yet.",
+            "too_long": "Please shorten your response to 500 characters or fewer.",
+            "sensitive_information": "Please do not paste the source material itself. Name only where the information is stored or currently exists."
+          },
+          "clarification": {
+            "trigger": "answer_is_vague",
+            "prompt": "Where is the strongest starting material most likely to be found: notes, emails, conversations, past content, or nowhere yet?"
+          }
+        },
+        {
+          "id": "minutes_to_start",
+          "order": 3,
+          "label": "Approximately how much time do you spend before reaching a usable starting point?",
+          "type": "number",
+          "required": true,
+          "unit": "minutes",
+          "min": 0,
+          "max": 480,
+          "step": 1,
+          "validation": {
+            "required": "Please enter your best estimate of the time spent before reaching a usable starting point.",
+            "non_numeric": "Please enter the number of minutes using digits only.",
+            "below_min": "Please enter a value of 0 minutes or more.",
+            "above_max": "Please enter a value between 0 and 480 minutes.",
+            "whole_number": "Please enter a whole number of minutes."
+          },
+          "clarification": {
+            "trigger": "missing_or_non_numeric",
+            "prompt": "What is your best estimate of the time spent before reaching a usable outline or opening?"
+          }
+        },
+        {
+          "id": "starting_difficulty",
+          "order": 4,
+          "label": "Which part of starting feels most difficult?",
+          "type": "select",
+          "required": true,
+          "options": [
+            {
+              "value": "choosing_topic",
+              "label": "Choosing the topic"
+            },
+            {
+              "value": "organizing_ideas",
+              "label": "Organizing ideas"
+            },
+            {
+              "value": "writing_opening",
+              "label": "Writing the opening"
+            },
+            {
+              "value": "finding_tone",
+              "label": "Finding the right tone"
+            },
+            {
+              "value": "deciding_scope",
+              "label": "Deciding what to include"
+            },
+            {
+              "value": "other",
+              "label": "Other"
+            }
+          ],
+          "validation": {
+            "required": "Please select the part of starting that feels most difficult.",
+            "selection_reminder": "Choose the option that most closely matches your experience.",
+            "other_required": "Please briefly describe the part of starting that feels most difficult.",
+            "other_too_long": "Please shorten your description to 250 characters or fewer."
+          }
+        }
+      ],
+      "measurement_placeholder_for_jason": {
+        "status": "TO_BE_REVIEWED_BY_JASON",
+        "primary": {
+          "name": "Time to first usable outline",
+          "unit": "minutes",
+          "source_fields": [
+            "minutes_to_start"
+          ],
+          "calculation": "Compare the user's reported baseline with the time required during the next three attempts.",
+          "period": "Next three content attempts."
+        },
+        "fallback": {
+          "name": "Number of completed starting attempts",
+          "unit": "attempts",
+          "source_fields": [
+            "content_type"
+          ],
+          "calculation": "Count attempts that reach a usable outline.",
+          "period": "Two weeks."
+        }
+      },
+      "allowed_next_action_categories": [
+        "start_from_existing_material",
+        "create_simple_outline",
+        "reduce_scope"
+      ],
+      "guardrails": {
+        "owner": "Verónica",
+        "do_not": [
+          "write the finished content",
+          "generate a complete content calendar",
+          "create a full brand voice profile",
+          "repurpose content into multiple finished formats",
+          "store proprietary source material"
+        ]
+      },
+      "episode_cta": {
+        "title": "Explore Episode 03: The Blank Page",
+        "description": "Hear how existing expertise can become the starting material for business content.",
+        "url": "https://www.startwithwai.tech/episode-03-blank-page/"
+      }
+    }
+  }
+}

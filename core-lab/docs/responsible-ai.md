@@ -26,4 +26,15 @@ To prevent security and operational escalation, the system enforces the followin
 The system does not estimate dollar savings, ROI, or financial values. LLM attempts to calculate financial benefits are blocked. Measurements must be expressed in non-financial units (e.g., minutes lost, number of ideas, capture attempts).
 
 ### 7. Agent 4 Safety Role
-Agent 4 (Safety and Quality Review Agent) acts as the final gatekeeper. Using Pydantic validators and specialized safety rules, Agent 4 validates the combined outputs of the previous agents, checking for PII, high-risk domains, unsupported financial claims, and disclosure completeness. If any safety boundary is violated, Agent 4 changes the status to `REVISE` or `BLOCKED`, preventing the user from seeing unsafe output.
+Agent 4 (Safety and Quality Review Agent) acts as the final gatekeeper. It is equipped with a portable agent skill located in [.agents/skills/safety-reviewer/](file:///C:/Users/jason/Documents/antigravity/bold-hubble/wai-scenario-lab/core-lab/.agents/skills/safety-reviewer/SKILL.md) which instructs it to:
+- Inspect the output for any leaked PII (names, emails, phones) and flag it if found.
+- Detect any dollar-denominated claims, ROI, or financial projections and enforce fallback non-monetary units.
+- Block prohibited domains (legal, medical, etc.).
+- Ensure the mandatory AI disclosure/reminder is appended.
+
+### 8. Architectural Enforcement & Deprecations
+To guarantee that these principles are not just guidelines but system-level constraints, we implement the following:
+*   **Pydantic Input/Output Schemas**: All 4 agents in [workflow.py](file:///C:/Users/jason/Documents/antigravity/bold-hubble/wai-scenario-lab/core-lab/app/workflow.py) use strict Pydantic schemas (e.g. `ValueEvidenceInput` and `SafetyReviewOutput`) to validate intermediate payloads, preventing session data tampering.
+*   **Deprecation of ROI Calculator**: The server [roi_calculator_server.py](file:///C:/Users/jason/Documents/antigravity/bold-hubble/wai-scenario-lab/core-lab/mcp_server/roi_calculator_server.py) has been deprecated and excluded from the active pipeline to completely eliminate the capability of the system to calculate monetary opportunity costs or financial ROI.
+*   **Stateful Agent Edges**: Agent 4 reviews the consolidated state before any output is returned to the user interface, acting as a deterministic safety gate.
+

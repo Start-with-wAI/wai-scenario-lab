@@ -14,8 +14,11 @@
 
 """Safe Config-driven MCP Server for wAI Scenario Lab.
 
-Exposes resources and tools matching the active configuration file
-without performing dollar-based calculations, ROI estimations, or financial advice.
+Exposes resources and tools matching the active configuration file.
+This prototype is designed to support reflective observation and non-financial measurement
+(e.g., minutes lost, ideas captured) to help users analyze workflow friction.
+It explicitly avoids performing financial valuations, opportunity cost estimations,
+consequential decision support, or professional (legal/medical/tax) advice.
 """
 
 import json

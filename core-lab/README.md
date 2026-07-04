@@ -29,7 +29,7 @@ Execution is structured as a sequential graph workflow:
 ## Capstone Concepts Demonstrated
 
 -   **Multi-Agent Graph Orchestration**: Structured state transitions and Human-in-the-Loop loops using Google ADK 2.0.
--   **Model Context Protocol (MCP)**: Exposes config metadata and metrics dynamically to Agent 3 using a safe [scenario_config_server.py](file:///c:/Users/MissV/Documents/Google/wai-scenario-lab/wai-scenario-lab/core-lab/mcp_server/scenario_config_server.py).
+-   **Model Context Protocol (MCP)**: Exposes config metadata and metrics dynamically to Agent 3 using [scenario_config_server.py](file:///c:/Users/MissV/Documents/Google/wai-scenario-lab/wai-scenario-lab/core-lab/mcp_server/scenario_config_server.py). This is the active MVP MCP server (replacing the deprecated/experimental `roi_calculator_server.py`) because it is fully grounded in the scenario configuration definitions and strictly avoids any dollar-value outputs, financial calculations, or opportunity cost estimations.
 -   **Deterministic Safety Pre-filters**: Programmatically blocks high-risk domains and redacts personal data (PII) before LLM invocation.
 -   **Scenario Brief Assembler**: Assembles final Pydantic-validated brief outcomes and ensures non-approved (`REVISE` / `BLOCKED`) flows withhold sensitive information.
 -   **Grounded Disclosures**: Disclosures and CTA URLs are injected dynamically from the config file to prevent LLM hallucinations.

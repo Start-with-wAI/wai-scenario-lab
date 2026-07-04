@@ -1,3 +1,8 @@
+# DEPRECATED / EXPERIMENTAL
+# WARNING: This file is no longer used in the active wAI Scenario Lab multi-agent workflow.
+# It contains opportunity cost and dollar value calculations that violate our non-financial 
+# boundary. Kept on disk only for historical reference as requested.
+
 import sys
 import logging
 from mcp.server.fastmcp import FastMCP

@@ -35,11 +35,12 @@ from app.schemas import (
 MODEL_ID = os.environ.get("ADK_MODEL", "gemini-3.5-flash")
 workflow_model = Gemini(model=MODEL_ID)
 
-# Integrate our FastMCP calculator server as an active Toolset
-calculator_tools = McpToolset(
+# Integrate our config-driven FastMCP server as an active Toolset for Agent 3
+# TODO: Jason to review and finalize this MCP attachment when wiring Vertex AI deployment.
+scenario_config_tools = McpToolset(
     connection_params=StdioServerParameters(
         command="python",
-        args=["core-lab/mcp_server/roi_calculator_server.py"]
+        args=["core-lab/mcp_server/scenario_config_server.py"]
     )
 )
 
@@ -147,7 +148,7 @@ value_evidence_agent = Agent(
     model=workflow_model,
     instruction=AGENT_3_INSTRUCTION,
     output_schema=CalculationState,
-    tools=[calculator_tools],
+    tools=[scenario_config_tools],
     mode="single_turn"
 )
 

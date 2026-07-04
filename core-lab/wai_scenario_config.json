@@ -1,4 +1,4 @@
-﻿{
+{
   "app": {
     "name": "wAI Scenario Lab",
     "version": "0.2.0",
@@ -56,7 +56,7 @@
     "max_agent_retry_attempts": 1,
     "max_revision_attempts": 1,
     "owner": "Verónica",
-    "high_risk_domains_placeholder_for_jason": [
+    "high_risk_domains": [
       "legal",
       "medical",
       "mental_health",
@@ -67,7 +67,7 @@
       "insurance",
       "regulatory_compliance"
     ],
-    "sensitive_data_categories_placeholder_for_jason": [
+    "sensitive_data_categories": [
       "person_name",
       "company_name",
       "email_address",
@@ -79,7 +79,7 @@
       "contracts",
       "confidential_business_information"
     ],
-    "release_status_values_placeholder_for_jason": [
+    "release_status_values": [
       "APPROVED",
       "APPROVED_WITH_LIMITATION",
       "REVISE",
@@ -160,7 +160,7 @@
   "required_disclosures": {
     "human_review_reminder": "Use this brief as a starting point. You remain responsible for deciding whether the suggested action fits your business, customers, tools, and obligations.",
     "responsible_use_limitation": "This educational prototype does not provide legal, medical, mental health, tax, financial planning, employment, lending, housing, insurance, or regulatory compliance advice.",
-    "approved_with_limitation_banner_placeholder_for_jason": "Use with caution: This brief is based on incomplete or uncertain information. Treat the measurement as an observation prompt rather than a conclusion."
+    "approved_with_limitation_banner": "Use with caution: This brief is based on incomplete or uncertain information. Treat the measurement as an observation prompt rather than a conclusion."
   },
   "scenario_brief_schema": {
     "owner": "Verónica",
@@ -168,7 +168,7 @@
     "scenario_id": "string",
     "scenario_title": "string",
     "episode_number": "string",
-    "brief_status_placeholder_for_jason": "APPROVED|APPROVED_WITH_LIMITATION",
+    "brief_status": "APPROVED|APPROVED_WITH_LIMITATION",
     "generated_at": "datetime",
     "what_we_heard": "string",
     "where_friction_may_be_occurring": "string",
@@ -177,7 +177,7 @@
     ],
     "one_next_step": "string",
     "why_this_step": "string",
-    "measurement_placeholder_for_jason": {
+    "measurement": {
       "name": "string",
       "baseline_value": "number|string|null",
       "baseline_display": "string",
@@ -190,7 +190,7 @@
     "unknowns": [
       "string"
     ],
-    "redaction_placeholder_for_jason": {
+    "redaction": {
       "applied": "boolean",
       "categories": [
         "string"
@@ -208,7 +208,7 @@
     "owner": "Shared",
     "scenario_list": "scenario://list",
     "scenario_questions": "scenario://{scenario_id}/questions",
-    "scenario_measurement_placeholder_for_jason": "scenario://{scenario_id}/measurement",
+    "scenario_measurement": "scenario://{scenario_id}/measurement",
     "scenario_metadata": "scenario://{scenario_id}/metadata"
   },
   "scenarios": {
@@ -310,7 +310,7 @@
           }
         }
       ],
-      "measurement_placeholder_for_jason": {
+      "measurement": {
         "status": "TO_BE_REVIEWED_BY_JASON",
         "primary": {
           "name": "Recovery time per incident",
@@ -437,7 +437,7 @@
           }
         }
       ],
-      "measurement_placeholder_for_jason": {
+      "measurement": {
         "status": "TO_BE_REVIEWED_BY_JASON",
         "primary": {
           "name": "Ideas successfully captured per week",
@@ -587,7 +587,7 @@
           }
         }
       ],
-      "measurement_placeholder_for_jason": {
+      "measurement": {
         "status": "TO_BE_REVIEWED_BY_JASON",
         "primary": {
           "name": "Time to first usable outline",

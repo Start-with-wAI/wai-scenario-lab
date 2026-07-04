@@ -1,94 +1,74 @@
-# core-lab
+# wAI Scenario Lab
 
-Simple ReAct agent
-Agent generated with `agents-cli` version `0.6.1`
+wAI Scenario Lab is an educational multi-agent prototype that helps micro business owners examine one fictional workflow-friction scenario and receive one practical next action, one observation measurement, and responsible-use reminders. 
 
-## Project Structure
-
-```
-core-lab/
-├── app/         # Core agent code
-│   ├── agent.py               # Main agent logic
-│   ├── fast_api_app.py        # FastAPI Backend server
-│   └── app_utils/             # App utilities and helpers
-├── tests/                     # Unit, integration, and load tests
-├── GEMINI.md                  # AI-assisted development guide
-└── pyproject.toml             # Project dependencies
-```
-
-> 💡 **Tip:** Use [Antigravity CLI](https://antigravity.google/) for AI-assisted development - project context is pre-configured in `GEMINI.md`.
-
-## Requirements
-
-Before you begin, ensure you have:
-- **uv**: Python package manager (used for all dependency management in this project) - [Install](https://docs.astral.sh/uv/getting-started/installation/) ([add packages](https://docs.astral.sh/uv/concepts/dependencies/) with `uv add <package>`)
-- **agents-cli**: Agents CLI - Install with `uv tool install google-agents-cli`
-- **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
-
-
-## Quick Start
-
-Install `agents-cli` and its skills if not already installed:
-
-```bash
-uvx google-agents-cli setup
-```
-
-Install required packages:
-
-```bash
-agents-cli install
-```
-
-Test the agent with a local web server:
-
-```bash
-agents-cli playground
-```
-
-You can also use features from the [ADK](https://adk.dev/) CLI with `uv run adk`.
-
-## Commands
-
-| Command              | Description                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `agents-cli install` | Install dependencies using uv                                                         |
-| `agents-cli playground` | Launch local development environment                                                  |
-| `agents-cli lint`    | Run code quality checks                                                               |
-| `agents-cli eval`    | Evaluate agent behavior (generate, grade, analyze, and more — see `agents-cli eval --help`) |
-| `uv run pytest tests/unit tests/integration` | Run unit and integration tests                                                        |
-| `agents-cli deploy`  | Deploy agent to Agent Runtime                                                                |
-| `agents-cli publish gemini-enterprise` | Register deployed agent to Gemini Enterprise                    || [A2A Inspector](https://github.com/a2aproject/a2a-inspector) | Launch A2A Protocol Inspector                                                        |
-
-## 🛠️ Project Management
-
-| Command | What It Does |
-|---------|--------------|
-| `agents-cli scaffold enhance` | Add CI/CD pipelines and Terraform infrastructure |
-| `agents-cli infra cicd` | One-command setup of entire CI/CD pipeline + infrastructure |
-| `agents-cli scaffold upgrade` | Auto-upgrade to latest version while preserving customizations |
+The project demonstrates building secure, compliant, and config-driven AI agent workflows utilizing the Google Agent Development Kit (ADK) 2.0.
 
 ---
 
-## Development
+## Architecture Overview
 
-Edit your agent logic in `app/agent.py` and test with `agents-cli playground` - it auto-reloads on save.
+### Active Implementation
+The `core-lab/` directory is the single active, runnable implementation source of truth.
 
-## Deployment
+### MVP Scenarios (Config-Driven)
+All scenario configurations, metadata, questions, and metrics are defined in [wai_scenario_config.json](file:///c:/Users/MissV/Documents/Google/wai-scenario-lab/wai-scenario-lab/core-lab/wai_scenario_config.json):
+*   **`cool_down_tax`**: Examines outsized emotional and time recovery overhead after a difficult business interaction.
+*   **`brain_fog`**: Identifies capture friction for ideas that occur at inconvenient times.
+*   **`blank_page`**: Examines content creation start friction before reaching a draft outline.
 
+### Four-Agent Graph Workflow
+Execution is structured as a sequential graph workflow:
+1.  **Scenario Guide (Agent 1)**: Pre-processes inputs, redacts sensitive details, and structures raw user answers.
+2.  **Workflow Analysis (Agent 2)**: Identifies a single process friction point and proposes exactly one practical next action.
+3.  **Value and Evidence (Agent 3)**: Resolves non-financial baseline measurements and metrics for observation.
+4.  **Safety and Quality Review (Agent 4)**: Enforces safety gates, quality metrics, and professional advice boundaries.
+
+---
+
+## Capstone Concepts Demonstrated
+
+-   **Multi-Agent Graph Orchestration**: Structured state transitions and Human-in-the-Loop loops using Google ADK 2.0.
+-   **Model Context Protocol (MCP)**: Exposes config metadata and metrics dynamically to Agent 3 using [scenario_config_server.py](file:///c:/Users/MissV/Documents/Google/wai-scenario-lab/wai-scenario-lab/core-lab/mcp_server/scenario_config_server.py). This is the active MVP MCP server (replacing the deprecated/experimental `roi_calculator_server.py`) because it is fully grounded in the scenario configuration definitions and strictly avoids any dollar-value outputs, financial calculations, or opportunity cost estimations.
+-   **Deterministic Safety Pre-filters**: Programmatically blocks high-risk domains and redacts personal data (PII) before LLM invocation.
+-   **Scenario Brief Assembler**: Assembles final Pydantic-validated brief outcomes and ensures non-approved (`REVISE` / `BLOCKED`) flows withhold sensitive information.
+-   **Grounded Disclosures**: Disclosures and CTA URLs are injected dynamically from the config file to prevent LLM hallucinations.
+-   **Testing & Evaluation Suite**: Verified with 28 passing unit and offline integration tests.
+
+---
+
+## Local Setup & Execution
+
+### Requirements
+- **uv**: Astral's Python package manager. [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
+
+### Setup Commands
+Install dependencies in the workspace virtual environment:
 ```bash
-gcloud config set project <your-project-id>
-agents-cli deploy
+cd core-lab
+uv sync
 ```
 
-To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
-To set up your production infrastructure, run `agents-cli infra cicd`.
+### Run Local Demo
+To demonstrate the complete wAI Scenario Lab pipeline on a sample payload offline (without network or GCP credentials):
+```bash
+uv run python scripts/run_sample_brief.py
+```
 
-## Observability
+### Run Test Suite
+Run local unit and integration tests:
+```bash
+uv run pytest tests/unit tests/integration
+```
 
-Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging.
+> ⚠️ **Test Results Note**: 28 local/offline tests pass successfully. 4 integration tests querying Gemini models (`test_agent_stream`, `test_adk_run_sse`, etc.) fail with a `403 Forbidden` error if the target Google Cloud project lacks the Agent Platform API (`aiplatform.googleapis.com`) enablement or required developer permissions. This does not impact local capstone validation.
 
-## A2A Inspector
+---
 
-This agent supports the [A2A Protocol](https://a2a-protocol.org/). Use the [A2A Inspector](https://github.com/a2aproject/a2a-inspector) to test interoperability.
-See the [A2A Inspector docs](https://github.com/a2aproject/a2a-inspector) for details.
+## Responsible-Use Boundaries
+
+wAI Scenario Lab enforces strict compliance and ethical guidelines:
+1.  **No Professional Advice**: Does not provide legal, medical, tax, financial planning, employment, lending, housing, insurance, or regulatory compliance advice.
+2.  **No Monetary ROI/Savings Calculations**: Decouples calculations entirely from dollar figures, annual savings, opportunity costs, marketing equity, or guaranteed productivity gains. Outputs are limited to non-financial metrics (e.g. minutes, incident counts).
+3.  **PII Privacy Redaction**: Personal names, company names, emails, and passwords are programmatically redacted.
+4.  **Human-in-the-Loop Required**: All suggested actions and measurements are observational starting points; users remain responsible for decisions.

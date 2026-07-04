@@ -39,9 +39,24 @@ load_dotenv()
 setup_telemetry()
 # Must run before get_fast_api_app to set the tracer provider resource.
 setup_agent_engine_telemetry()
+import logging
+
 _, project_id = google.auth.default()
-logging_client = google_cloud_logging.Client()
-logger = logging_client.logger(__name__)
+
+if os.getenv("INTEGRATION_TEST") == "TRUE":
+    class MockCloudLogger:
+        def log_struct(self, data, severity="INFO"):
+            logging.info(f"MockCloudLogger [{severity}]: {data}")
+    logger = MockCloudLogger()
+else:
+    try:
+        logging_client = google_cloud_logging.Client()
+        logger = logging_client.logger(__name__)
+    except Exception:
+        class MockCloudLogger:
+            def log_struct(self, data, severity="INFO"):
+                logging.info(f"MockCloudLogger [{severity}]: {data}")
+        logger = MockCloudLogger()
 allow_origins = (
     os.getenv("ALLOW_ORIGINS", "").split(",") if os.getenv("ALLOW_ORIGINS") else None
 )

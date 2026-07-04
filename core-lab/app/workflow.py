@@ -23,6 +23,10 @@ from mcp import StdioServerParameters
 from google.adk.models import Gemini
 from google.genai import types
 
+import pathlib
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools.skill_toolset import SkillToolset
+
 # Import schemas for runtime structural enforcement
 from app.schemas import (
     ScenarioInputState, 
@@ -43,6 +47,13 @@ scenario_config_tools = McpToolset(
         args=["core-lab/mcp_server/scenario_config_server.py"]
     )
 )
+
+# Load the safety-reviewer skill for Agent 4
+SKILL_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", ".agents", "skills", "safety-reviewer")
+)
+safety_reviewer_skill = load_skill_from_dir(pathlib.Path(SKILL_DIR))
+safety_reviewer_tools = SkillToolset(skills=[safety_reviewer_skill])
 
 # =================---------------------------------------------------------
 # 0. AGENT INSTRUCTION PROMPTS
@@ -88,17 +99,18 @@ Requirements:
 AGENT_3_INSTRUCTION = """
 You are Agent 3, the wAI Value and Evidence Agent.
 
-Your role is to perform quantitative baseline analysis and select measurement metrics for the scenario.
+Your sole analytical purpose is to select a single, non-monetary observation metric and detect insufficient evidence, defaulting to safe fallbacks when inputs are vague.
 
 Requirements:
-1. Select one useful measure from the scenario config (e.g. Recovery time per incident, Ideas captured weekly, Time to outline).
-2. Use deterministic measurement rules from the config to define the metric.
-3. Call the FastMCP calculator tools if necessary to perform calculations.
-4. CRITICAL: Avoid calculating ROI, dollar savings, guaranteed productivity, annual value, or any financial figures. You must NOT output opportunity costs or marketing equity in dollars ($), even if the tools return them.
-5. All outputs must be in terms of non-financial units (e.g., minutes lost, number of incidents, ideas, attempts).
-6. Use the fallback measurement defined in the config when evidence is insufficient or vague (set insufficient_data_flag to True).
-7. State the evidence strength as 'strong', 'partial', or 'insufficient'.
-8. Return only data matching the CalculationState schema.
+1. Select exactly one useful, non-monetary observation measure from the scenario configuration (e.g., "Recovery time per incident" for cool_down_tax, "Ideas successfully captured per week" for brain_fog, "Time to first usable outline" for blank_page).
+2. Use deterministic measurement rules from the configuration to define the metric. Do not invent metrics or calculations.
+3. Call the FastMCP configuration server tools to retrieve scenarios, questions, and measurement configurations.
+4. CRITICAL: Enforce our strict product boundary. You must never perform financial calculations, calculate ROI, or generate opportunity-cost, dollar savings, annual value, or marketing-equity projections in dollars ($). All measurements and displays must use non-monetary, defensible observation metrics (e.g., minutes, ideas, raw time lost, or capture count logs).
+5. If the user's input answers are vague, incomplete, or lack sufficient evidence to establish a clear baseline value:
+   - Set `insufficient_data_flag = True`.
+   - Select the fallback measurement definition from the scenario config.
+   - State the `evidence_strength` as 'insufficient' or 'partial' (and use 'strong' only when inputs are clear and fully complete).
+6. Return only structured data matching the CalculationState schema.
 """.strip()
 
 AGENT_4_INSTRUCTION = """
@@ -138,6 +150,7 @@ workflow_analyst_agent = Agent(
     name="workflow_analyst",
     model=workflow_model,
     instruction=AGENT_2_INSTRUCTION,
+    input_schema=ScenarioInputState,
     output_schema=AnalysisState,
     mode="single_turn"
 )
@@ -147,6 +160,7 @@ value_evidence_agent = Agent(
     name="value_evidence",
     model=workflow_model,
     instruction=AGENT_3_INSTRUCTION,
+    input_schema=AnalysisState,
     output_schema=CalculationState,
     tools=[scenario_config_tools],
     mode="single_turn"
@@ -157,7 +171,9 @@ safety_quality_agent = Agent(
     name="safety_quality",
     model=workflow_model,
     instruction=AGENT_4_INSTRUCTION,
+    input_schema=CalculationState,
     output_schema=SafetyReviewState,
+    tools=[safety_reviewer_tools],
     mode="single_turn"
 )
 

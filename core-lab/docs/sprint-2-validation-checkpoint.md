@@ -90,3 +90,20 @@ uv run pytest tests/unit
 3. **Verify Valid Form Submission**:
    - Submit the form with correct data.
    - Check that the server returns **HTTP 200** and shows the normalized payload page containing the text: `Sprint 2 checkpoint: input validated and normalized. Agent workflow has not run yet.`
+
+---
+
+## Evidence Screenshots
+
+### 1. Root Questionnaire Page Loaded from Config
+* **Screenshot**: `docs/evidence/sprint-02/01-root-page-loaded.png`
+* **What it proves**: The public form for Episode 01 renders all config-driven labels and descriptions dynamically and successfully.
+* **Related Route/Command**: `GET /`
+* **Known Limitations**: Does not load other episodes (only Episode 01 is active).
+
+### 2. Validation Errors and Preserved Input Values
+* **Screenshot**: `docs/evidence/sprint-02/02-validation-errors-preserved-values.png`
+* **What it proves**: The form validation catches missing inputs and displays appropriate browser-level or server-side tooltips/validation error cards.
+* **Related Route/Command**: `POST /` (invalid input)
+* **Known Limitations**: The native HTML5 validation stops empty submissions at the browser level before reaching the server.
+

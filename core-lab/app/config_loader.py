@@ -678,3 +678,180 @@ def render_error_page(error_message: str) -> str:
 </body>
 </html>
 """
+
+
+def render_checkpoint_page(response: dict) -> str:
+    """Renders the Sprint 3 checkpoint success page with escaped JSON and trace data."""
+    import json
+    import html
+
+    checkpoint_msg = response.get("message", "")
+    adapter_status = response.get("adapter_status", "")
+
+    agent_1_input_pretty = json.dumps(response.get("agent_1_input", {}), indent=2, ensure_ascii=False)
+    graph_trace_pretty = json.dumps(response.get("graph_transition_trace", []), indent=2, ensure_ascii=False)
+    not_run_pretty = json.dumps(response.get("not_run", []), indent=2, ensure_ascii=False)
+
+    esc_msg = html.escape(checkpoint_msg)
+    esc_status = html.escape(adapter_status)
+    esc_input = html.escape(agent_1_input_pretty)
+    esc_trace = html.escape(graph_trace_pretty)
+    esc_not_run = html.escape(not_run_pretty)
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wAI Scenario Lab - Sprint 3 Checkpoint</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+        body {{
+            margin: 0;
+            padding: 0;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }}
+
+        .container {{
+            max-width: 800px;
+            width: 90%;
+            padding: 40px 0;
+            box-sizing: border-box;
+        }}
+
+        .card {{
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+        }}
+
+        .badge {{
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+            padding: 6px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }}
+
+        h1 {{
+            font-size: 1.75rem;
+            margin: 0 0 12px 0;
+            background: linear-gradient(135deg, #ffffff 0%, #d1d5db 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+
+        p {{
+            color: #9ca3af;
+            font-size: 1rem;
+            margin: 0 0 24px 0;
+            line-height: 1.5;
+        }}
+
+        .status-box {{
+            background-color: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 0.95rem;
+            color: #c7d2fe;
+            margin-bottom: 24px;
+        }}
+
+        .checkpoint-banner {{
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 0.95rem;
+            color: #a7f3d0;
+            margin-bottom: 24px;
+        }}
+
+        .section-title {{
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e5e7eb;
+            margin: 28px 0 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 8px;
+        }}
+
+        pre {{
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #a7f3d0;
+            margin-bottom: 24px;
+        }}
+
+        .btn-back {{
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #f3f4f6;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }}
+
+        .btn-back:hover {{
+            background-color: rgba(255, 255, 255, 0.1);
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="badge">Checkpoint 3</div>
+            <h1>Workflow Adapter Verification</h1>
+
+            <div class="checkpoint-banner">
+                <strong>{esc_msg}</strong>
+            </div>
+
+            <div class="status-box">
+                Adapter Status: <strong>{esc_status}</strong>
+            </div>
+
+            <div class="section-title">Agent 1 Input Preparation</div>
+            <p>The following structured payload is ready to be passed to Agent 1 (Scenario Guide):</p>
+            <pre>{esc_input}</pre>
+
+            <div class="section-title">Dry-Run Graph Transition Trace</div>
+            <p>The sequential transition path configured for this agent graph is tracked below:</p>
+            <pre>{esc_trace}</pre>
+
+            <div class="section-title">Intentionally Not Executed Yet</div>
+            <p>To preserve product boundaries, the following live tasks have been bypassed in Sprint 3:</p>
+            <pre>{esc_not_run}</pre>
+
+            <a href="/" class="btn-back">← Edit My Answers</a>
+        </div>
+    </div>
+</body>
+</html>
+"""
+

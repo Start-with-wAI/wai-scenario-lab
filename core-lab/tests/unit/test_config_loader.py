@@ -332,7 +332,7 @@ class TestConfigLoader(unittest.TestCase):
             "work_disrupted": "Scheduling"
         })
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Sprint 2 checkpoint: input validated and normalized", response.text)
+        self.assertIn("Sprint 3 checkpoint: normalized input prepared for workflow adapter", response.text)
         self.assertIn("cool_down_tax", response.text)
         self.assertIn("minutes_lost", response.text)
         self.assertIn("45", response.text)

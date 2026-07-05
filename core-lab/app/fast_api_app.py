@@ -40,7 +40,12 @@ from app.config_loader import (
     get_public_episode_01_config,
     render_episode_01_page,
     render_error_page,
+    render_checkpoint_page,
     ConfigLoadError,
+)
+from app.workflow_adapter import (
+    prepare_episode_01_workflow_adapter_response,
+    WorkflowAdapterError,
 )
 from app.form_validation import (
     validate_episode_01_form,
@@ -166,125 +171,15 @@ async def public_episode_01_submit(request: Request):
 
         # Successful validation
         payload = build_episode_01_workflow_payload(config, normalized_answers)
-        import json
-        payload_pretty = json.dumps(payload, indent=2, ensure_ascii=False)
 
-        success_html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>wAI Scenario Lab - Input Validated</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-
-        body {{
-            margin: 0;
-            padding: 0;
-            background-color: #0b0f19;
-            color: #f3f4f6;
-            font-family: 'Outfit', sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }}
-
-        .card {{
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 650px;
-            width: 90%;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }}
-
-        .badge {{
-            display: inline-block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background-color: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            padding: 6px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }}
-
-        h1 {{
-            font-size: 1.75rem;
-            margin: 0 0 12px 0;
-            background: linear-gradient(135deg, #ffffff 0%, #d1d5db 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }}
-
-        p {{
-            color: #9ca3af;
-            font-size: 1rem;
-            margin: 0 0 24px 0;
-            line-height: 1.5;
-        }}
-
-        pre {{
-            background-color: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 20px;
-            overflow-x: auto;
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: #a7f3d0;
-            margin-bottom: 24px;
-        }}
-
-        .btn-back {{
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: rgba(255, 255, 255, 0.05);
-            color: #f3f4f6;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }}
-
-        .btn-back:hover {{
-            background-color: rgba(255, 255, 255, 0.1);
-        }}
-
-        .temp-banner {{
-            background-color: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 10px;
-            padding: 12px 16px;
-            font-size: 0.9rem;
-            color: #fef3c7;
-            margin-bottom: 24px;
-        }}
-    </style>
-</head>
-<body>
-    <div class="card">
-        <div class="badge">Success</div>
-        <h1>Sprint 2 Checkpoint</h1>
-        <div class="temp-banner">
-            <strong>Sprint 2 checkpoint: input validated and normalized. Agent workflow has not run yet.</strong>
-        </div>
-        <p>The form data has passed all server-side validation checks. Below is the normalized workflow payload ready for Sprint 3:</p>
-        <pre>{payload_pretty}</pre>
-        <a href="/" class="btn-back">← Edit My Answers</a>
-    </div>
-</body>
-</html>
-"""
-        return HTMLResponse(content=success_html, status_code=200)
+        # Sprint 3 Workflow Adapter processing
+        adapter_response = prepare_episode_01_workflow_adapter_response(payload)
+        checkpoint_html = render_checkpoint_page(adapter_response)
+        return HTMLResponse(content=checkpoint_html, status_code=200)
     except ConfigLoadError as e:
         return HTMLResponse(content=render_error_page(str(e)), status_code=500)
+    except WorkflowAdapterError as e:
+        return HTMLResponse(content=render_error_page(str(e)), status_code=400)
     except Exception as e:
         err_msg = f"Internal server error in POST: {e}"
         if hasattr(logger, "log_struct"):

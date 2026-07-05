@@ -138,10 +138,9 @@ class TestSafetyRouter(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertIn(
-            "Sprint 4 checkpoint: deterministic safety routing preview completed. Agent workflow has not run yet.",
+            "Sprint 5 checkpoint: terminal output assembly completed. Live agent workflow has not run yet.",
             response.text
         )
-        self.assertIn("Deterministic Precheck", response.text)
         self.assertIn("RENDER_BRIEF", response.text)
 
     def test_post_route_invalid(self):

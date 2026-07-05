@@ -42,6 +42,7 @@ from app.config_loader import (
     render_error_page,
     render_checkpoint_page,
     ConfigLoadError,
+    load_scenario_config,
 )
 from app.workflow_adapter import (
     prepare_episode_01_workflow_adapter_response,
@@ -50,6 +51,10 @@ from app.workflow_adapter import (
 from app.safety_router import (
     prepare_sprint_4_safety_routing_response,
     SafetyRouterError,
+)
+from app.terminal_output import (
+    prepare_sprint_5_terminal_output_response,
+    TerminalOutputError,
 )
 from app.form_validation import (
     validate_episode_01_form,
@@ -181,11 +186,17 @@ async def public_episode_01_submit(request: Request):
 
         # Sprint 4 Safety Routing processing
         sprint_4_response = prepare_sprint_4_safety_routing_response(payload, adapter_response)
-        checkpoint_html = render_checkpoint_page(sprint_4_response)
+
+        # Sprint 5 Terminal Output Assembly
+        full_config = load_scenario_config()
+        sprint_5_response = prepare_sprint_5_terminal_output_response(
+            full_config, payload, adapter_response, sprint_4_response
+        )
+        checkpoint_html = render_checkpoint_page(sprint_5_response)
         return HTMLResponse(content=checkpoint_html, status_code=200)
     except ConfigLoadError as e:
         return HTMLResponse(content=render_error_page(str(e)), status_code=500)
-    except (WorkflowAdapterError, SafetyRouterError) as e:
+    except (WorkflowAdapterError, SafetyRouterError, TerminalOutputError) as e:
         return HTMLResponse(content=render_error_page(str(e)), status_code=400)
     except Exception as e:
         err_msg = f"Internal server error in POST: {e}"

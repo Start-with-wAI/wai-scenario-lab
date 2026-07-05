@@ -681,24 +681,31 @@ def render_error_page(error_message: str) -> str:
 
 
 def render_checkpoint_page(response: dict) -> str:
-    """Renders the Sprint 4 checkpoint success page with escaped JSON and trace data."""
+    """Renders the Sprint 5 / Sprint 4 checkpoint success page with escaped JSON and Scenario Brief previews."""
     import json
     import html
 
     checkpoint_msg = response.get("message", "")
     adapter_status = response.get("adapter_status", "")
+    checkpoint_name = response.get("checkpoint", "Sprint 4")
+
+    is_sprint_5 = checkpoint_name == "Sprint 5"
+    is_sprint_4 = checkpoint_name == "Sprint 4" or (not is_sprint_5 and "safety_precheck" in response)
 
     agent_1_input_pretty = json.dumps(response.get("agent_1_input", {}), indent=2, ensure_ascii=False)
     not_run_pretty = json.dumps(response.get("not_run", []), indent=2, ensure_ascii=False)
-
-    is_sprint_4 = "safety_precheck" in response
 
     safety_precheck_pretty = ""
     terminal_route_pretty = ""
     safety_trace_pretty = ""
     graph_trace_pretty = ""
+    brief_preview_pretty = ""
 
-    if is_sprint_4:
+    if is_sprint_5:
+        brief_preview_pretty = json.dumps(response.get("scenario_brief_preview", {}), indent=2, ensure_ascii=False)
+        terminal_route = response.get("terminal_route", "HUMAN_TRIAGE")
+        brief_status = response.get("brief_preview_status", "REVISE")
+    elif is_sprint_4:
         safety_precheck_pretty = json.dumps(response.get("safety_precheck", {}), indent=2, ensure_ascii=False)
         terminal_route_pretty = json.dumps(response.get("terminal_route_preview", {}), indent=2, ensure_ascii=False)
         safety_trace_pretty = json.dumps(response.get("safety_routing_trace", []), indent=2, ensure_ascii=False)
@@ -709,35 +716,201 @@ def render_checkpoint_page(response: dict) -> str:
     esc_status = html.escape(adapter_status)
     esc_input = html.escape(agent_1_input_pretty)
     esc_not_run = html.escape(not_run_pretty)
+    esc_brief_status = html.escape(str(response.get("brief_preview_status", "UNKNOWN")))
+    esc_safety_precheck = html.escape(json.dumps(
+        {"safety_precheck": response.get("safety_precheck", {})},
+        indent=2,
+        ensure_ascii=False
+    ))
 
-    esc_precheck = html.escape(safety_precheck_pretty)
-    esc_terminal = html.escape(terminal_route_pretty)
-    esc_safety_trace = html.escape(safety_trace_pretty)
+    badge_text = "Sprint 5 Checkpoint" if is_sprint_5 else ("Sprint 4 Checkpoint" if is_sprint_4 else "Checkpoint 3")
+    title_text = "Terminal Output & Brief Preview" if is_sprint_5 else ("Safety Routing Verification" if is_sprint_4 else "Workflow Adapter Verification")
 
-    badge_text = "Sprint 4 Checkpoint" if is_sprint_4 else "Checkpoint 3"
-    title_text = "Safety Routing Verification" if is_sprint_4 else "Workflow Adapter Verification"
+    # Render Sprint 5 specifics
+    sprint_5_html = ""
+    if is_sprint_5:
+        esc_brief_json = html.escape(brief_preview_pretty)
+        brief_preview_data = response.get("scenario_brief_preview", {})
 
-    precheck_html = ""
-    if is_sprint_4:
-        precheck_html = f"""
-            <div class="section-title">Deterministic Safety Precheck Result</div>
-            <p><span class="badge" style="background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">Deterministic Precheck (No Agent 4)</span></p>
-            <pre>{esc_precheck}</pre>
+        # Status badge colors
+        badge_style = "background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);"
+        if brief_status == "APPROVED_WITH_LIMITATION":
+            badge_style = "background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);"
+        elif brief_status == "REVISE":
+            badge_style = "background-color: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3);"
+        elif brief_status == "BLOCKED":
+            badge_style = "background-color: rgba(220, 38, 38, 0.2); color: #ef4444; border: 1px solid rgba(220, 38, 38, 0.4);"
 
-            <div class="section-title">Terminal Route Preview</div>
-            <p>Maps the release status to the appropriate final redirect page:</p>
-            <pre>{esc_terminal}</pre>
+        # Render the brief details or withheld states
+        if terminal_route in ("RENDER_BRIEF", "RENDER_LIMITATION_BANNER"):
+            limitation_banner_html = ""
+            if terminal_route == "RENDER_LIMITATION_BANNER":
+                limitation_banner_html = f"""
+                <div class="limitation-banner">
+                    <strong>Limitation Warning:</strong> Use with caution: This brief is based on incomplete or uncertain information. Treat the measurement as an observation prompt rather than a conclusion.
+                </div>
+                """
 
-            <div class="section-title">Safety Routing Trace</div>
-            <pre>{esc_safety_trace}</pre>
-        """
+            # Build assumptions
+            assumptions_list = "".join(f"<li>{html.escape(item)}</li>" for item in brief_preview_data.get("assumptions", []))
+            assumptions_html = f"<ul class='brief-bullets'>{assumptions_list}</ul>" if assumptions_list else "<p>None.</p>"
+
+            # Build unknowns
+            unknowns_list = "".join(f"<li>{html.escape(item)}</li>" for item in brief_preview_data.get("unknowns", []))
+            unknowns_html = f"<ul class='brief-bullets'>{unknowns_list}</ul>" if unknowns_list else "<p>None.</p>"
+
+            measurement_data = brief_preview_data.get("measurement", {})
+            evidence_badge = "background-color: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);"
+            if measurement_data.get("evidence_strength") == "partial":
+                evidence_badge = "background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);"
+            
+            redaction_data = brief_preview_data.get("redaction", {})
+            redaction_status_html = ""
+            if redaction_data.get("applied"):
+                redaction_cats = ", ".join(redaction_data.get("categories", []))
+                redaction_status_html = f"""
+                <div class="disclosure-box" style="border-color: rgba(245, 158, 11, 0.2); background: rgba(245, 158, 11, 0.02); color: #fbbf24;">
+                    <strong>Sensitive Information Redacted:</strong> [{redaction_cats}] data was detected and sanitized to protect privacy.
+                </div>
+                """
+
+            episode_cta = brief_preview_data.get("episode_cta", {})
+
+            sprint_5_html = f"""
+            <div class="section-title">Terminal Route Preview Result</div>
+            <p>Terminal Route: <span class="badge" style="background-color: rgba(16, 185, 129, 0.15); color: #34d399; margin: 0; border: 1px solid rgba(16, 185, 129, 0.3);">{html.escape(terminal_route)}</span></p>
+            <p>brief_preview_status: <strong>{esc_brief_status}</strong></p>
+
+            <div class="section-title">Deterministic Scenario Brief Preview</div>
+            <p style="color: #9ca3af; font-size: 0.9rem; margin-top: -10px;"><em>Disclaimer: This is a static, deterministic Scenario Brief preview for verification. No live LLM or agent generation has run.</em></p>
+
+            <div class="brief-card">
+                <div class="brief-header">
+                    <div class="brief-title">{html.escape(brief_preview_data.get("scenario_title", "Scenario Title"))}</div>
+                    <span class="badge" style="{badge_style}">{html.escape(brief_status)}</span>
+                </div>
+
+                {limitation_banner_html}
+
+                <div class="brief-section">
+                    <div class="brief-section-title">What We Heard</div>
+                    <div class="brief-text">{html.escape(brief_preview_data.get("what_we_heard", ""))}</div>
+                </div>
+
+                <div class="brief-section">
+                    <div class="brief-section-title">Where Friction May Be Occurring</div>
+                    <div class="brief-text">{html.escape(brief_preview_data.get("where_friction_may_be_occurring", ""))}</div>
+                </div>
+
+                <div class="brief-section">
+                    <div class="brief-section-title">Assumptions</div>
+                    {assumptions_html}
+                </div>
+
+                <div class="brief-section">
+                    <div class="brief-section-title">Proposed Next Step</div>
+                    <div class="brief-text"><strong>Action:</strong> {html.escape(brief_preview_data.get("one_next_step", ""))}</div>
+                    <div class="brief-text" style="margin-top: 6px;"><strong>Rationale:</strong> {html.escape(brief_preview_data.get("why_this_step", ""))}</div>
+                </div>
+
+                <div class="brief-section">
+                    <div class="brief-section-title">Observation Measurement</div>
+                    <div class="metric-box">
+                        <div class="metric-value">{html.escape(measurement_data.get("baseline_display", ""))}</div>
+                        <div class="brief-text"><strong>Metric:</strong> {html.escape(measurement_data.get("name", ""))}</div>
+                        <div class="brief-text"><strong>Period:</strong> {html.escape(measurement_data.get("period", ""))}</div>
+                        <div class="brief-text"><strong>Method:</strong> {html.escape(measurement_data.get("calculation_method", ""))}</div>
+                        <div class="brief-text" style="margin-top: 8px;">
+                            <strong>Evidence Strength:</strong> 
+                            <span class="badge" style="{evidence_badge} font-size: 0.7rem; padding: 2px 6px; margin: 0;">{html.escape(measurement_data.get("evidence_strength", ""))}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="brief-section">
+                    <div class="brief-section-title">Unknowns</div>
+                    {unknowns_html}
+                </div>
+
+                {redaction_status_html}
+
+                <div class="disclosure-box">
+                    <strong>Human Review Reminder:</strong> {html.escape(brief_preview_data.get("human_review_reminder", ""))}
+                </div>
+
+                <div class="disclosure-box">
+                    <strong>Responsible Use Limitation:</strong> {html.escape(brief_preview_data.get("responsible_use_limitation", ""))}
+                </div>
+
+                <div class="cta-box">
+                    <div class="brief-title" style="font-size: 1.1rem; margin-bottom: 4px;">{html.escape(episode_cta.get("title", "Learn More"))}</div>
+                    <p style="font-size: 0.9rem; margin-bottom: 12px; color: #9ca3af;">{html.escape(episode_cta.get("description", ""))}</p>
+                    <a href="{html.escape(episode_cta.get("url", "#"))}" target="_blank" class="cta-button">Listen to Podcast Episode</a>
+                </div>
+            </div>
+
+            <div class="section-title">Assembled Scenario Brief JSON</div>
+            <pre>{esc_brief_json}</pre>
+            <div class="section-title">Safety Precheck Snapshot</div>
+            <pre>{esc_safety_precheck}</pre>
+            """
+        elif terminal_route == "HUMAN_TRIAGE":
+            sprint_5_html = f"""
+            <div class="section-title">Terminal Route Preview Result</div>
+            <p>Terminal Route: <span class="badge" style="background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; margin: 0; border: 1px solid rgba(245, 158, 11, 0.3);">{html.escape(terminal_route)}</span></p>
+            <p>brief_preview_status: <strong>{esc_brief_status}</strong></p>
+
+            <div class="withheld-box">
+                <div class="withheld-title">Human Triage Required</div>
+                <p style="margin: 0; color: #fca5a5;">This scenario needs human review before a Scenario Brief can be shown.</p>
+                <p style="margin-top: 10px; margin-bottom: 0; font-size: 0.9rem; color: #f87171;">
+                    <strong>Instructions:</strong> {html.escape(brief_preview_data.get("revision_instructions", ""))}
+                </p>
+            </div>
+
+            <div class="section-title">Assembled Scenario Brief JSON</div>
+            <pre>{esc_brief_json}</pre>
+            """
+        elif terminal_route == "TERMINATE_BLOCKED":
+            sprint_5_html = f"""
+            <div class="section-title">Terminal Route Preview Result</div>
+            <p>Terminal Route: <span class="badge" style="background-color: rgba(239, 68, 68, 0.15); color: #fca5a5; margin: 0; border: 1px solid rgba(239, 68, 68, 0.3);">{html.escape(terminal_route)}</span></p>
+            <p>brief_preview_status: <strong>{esc_brief_status}</strong></p>
+
+            <div class="withheld-box" style="background-color: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+                <div class="withheld-title">Scenario Blocked</div>
+                <p style="margin: 0; color: #fca5a5;">This scenario is outside the safe scope of the demo, so no Scenario Brief was generated.</p>
+            </div>
+
+            <div class="section-title">Assembled Scenario Brief JSON</div>
+            <pre>{esc_brief_json}</pre>
+            """
     else:
-        esc_trace = html.escape(graph_trace_pretty)
-        precheck_html = f"""
-            <div class="section-title">Dry-Run Graph Transition Trace</div>
-            <p>The sequential transition path configured for this agent graph is tracked below:</p>
-            <pre>{esc_trace}</pre>
-        """
+        # Sprint 4 or 3 layout
+        esc_precheck = html.escape(safety_precheck_pretty)
+        esc_terminal = html.escape(terminal_route_pretty)
+        esc_safety_trace = html.escape(safety_trace_pretty)
+
+        if is_sprint_4:
+            sprint_5_html = f"""
+                <div class="section-title">Deterministic Safety Precheck Result</div>
+                <p><span class="badge" style="background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">Deterministic Precheck (No Agent 4)</span></p>
+                <pre>{esc_precheck}</pre>
+
+                <div class="section-title">Terminal Route Preview</div>
+                <p>Maps the release status to the appropriate final redirect page:</p>
+                <pre>{esc_terminal}</pre>
+
+                <div class="section-title">Safety Routing Trace</div>
+                <pre>{esc_safety_trace}</pre>
+            """
+        else:
+            esc_trace = html.escape(graph_trace_pretty)
+            sprint_5_html = f"""
+                <div class="section-title">Dry-Run Graph Transition Trace</div>
+                <p>The sequential transition path configured for this agent graph is tracked below:</p>
+                <pre>{esc_trace}</pre>
+            """
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -762,7 +935,7 @@ def render_checkpoint_page(response: dict) -> str:
 
         .container {{
             max-width: 800px;
-            width: 90%;
+            width: 95%;
             padding: 40px 0;
             box-sizing: border-box;
         }}
@@ -861,6 +1034,124 @@ def render_checkpoint_page(response: dict) -> str:
         .btn-back:hover {{
             background-color: rgba(255, 255, 255, 0.1);
         }}
+
+        /* Sprint 5 Specific Styles */
+        .brief-card {{
+            background: rgba(255, 255, 255, 0.015);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 24px;
+        }}
+        .brief-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }}
+        .brief-title {{
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+        }}
+        .limitation-banner {{
+            background-color: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            color: #fbbf24;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }}
+        .brief-section {{
+            margin-bottom: 24px;
+        }}
+        .brief-section-title {{
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }}
+        .brief-text {{
+            font-size: 1rem;
+            color: #e5e7eb;
+            line-height: 1.6;
+        }}
+        .brief-bullets {{
+            margin: 8px 0;
+            padding-left: 20px;
+            color: #e5e7eb;
+        }}
+        .brief-bullets li {{
+            margin-bottom: 6px;
+            line-height: 1.5;
+        }}
+        .metric-box {{
+            background-color: rgba(99, 102, 241, 0.03);
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 10px;
+        }}
+        .metric-value {{
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #818cf8;
+            margin-bottom: 8px;
+        }}
+        .disclosure-box {{
+            background-color: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 0.85rem;
+            color: #9ca3af;
+            line-height: 1.5;
+            margin-top: 16px;
+        }}
+        .cta-box {{
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+            text-align: center;
+        }}
+        .cta-button {{
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #6366f1;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 12px;
+            transition: background-color 0.2s;
+        }}
+        .cta-button:hover {{
+            background-color: #4f46e5;
+        }}
+        .withheld-box {{
+            background-color: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 12px;
+            padding: 24px;
+            color: #fca5a5;
+            margin-top: 24px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }}
+        .withheld-title {{
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #ef4444;
+        }}
     </style>
 </head>
 <body>
@@ -877,7 +1168,7 @@ def render_checkpoint_page(response: dict) -> str:
                 Adapter Status: <strong>{esc_status}</strong>
             </div>
 
-            {precheck_html}
+            {sprint_5_html}
 
             <div class="section-title">Agent 1 Input Preparation</div>
             <p>The following structured payload was prepared by the workflow adapter:</p>
@@ -893,4 +1184,3 @@ def render_checkpoint_page(response: dict) -> str:
 </body>
 </html>
 """
-

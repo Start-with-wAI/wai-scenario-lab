@@ -183,7 +183,7 @@ core-lab/docs/evidence/sprint-05/
 | `04-safety-precheck-snapshot.png` | Safety precheck snapshot remains visible |
 | `05-human-triage-withheld-brief.png` | Sensitive input withholds completed brief details |
 | `06-blocked-withheld-brief.png` | High‑risk input blocks completed brief rendering |
-| `07-tests-passing.png` | Unit tests pass |
+| `07-unit-tests-passed.png` | Unit tests pass |
 
 ## 16. Teamwork Integration
 

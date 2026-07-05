@@ -1,40 +1,43 @@
-# Responsible AI & Safety Guardrails
+# Responsible AI
 
-The wAI Scenario Lab is designed from the ground up to prioritize user privacy, safety, and strict regulatory boundaries. 
+wAI Scenario Lab is an educational prototype that uses AI to help micro business owners think through one fictional workflow-friction scenario. It is not a professional adviser or automation system.
 
-## Key Principles & Guardrails
+## AI Disclosure
 
-### 1. AI Transparency
-Users must be clearly informed that the Scenario Lab is an educational prototype that uses artificial intelligence to analyze answers. This is enforced by displaying transparency and privacy notices before a scenario begins, and embedding required disclaimers directly into the final rendered Scenario Brief.
+The UI and Scenario Brief disclose that AI is used to analyze the answers the user provides. The prototype is designed for reflection and planning support, not delegated decision-making.
 
-### 2. Zero Sensitive Data (PII Redaction)
-The application has a strict zero-PII policy. Users are cautioned against entering names, emails, company names, or other personal data. Agent 1 is instructed to sanitize and redact any personal identifiers. Agent 4 performs a final check; if unauthorized PII is detected, the brief is flagged as `REVISE` or `BLOCKED`.
+## Privacy And PII Handling
 
-### 3. Mandatory Human Review
-The prototype acts as an advisory assistant, not a decision-maker. All generated briefs must display the `human_review_reminder` reminding users that they remain responsible for verifying that any suggested action fits their business context.
+Users are told not to enter confidential or personal information. Deterministic checks scan text for email addresses, phone numbers, password-like strings, account-like strings, and similar sensitive details. When detected, the app withholds the completed brief and routes the case to revision or human review.
 
-### 4. No Professional Advice
-The AI must not provide legal, medical, mental-health, tax, financial, employment, lending, housing, insurance, or regulatory compliance advice. Any user inputs pushing the agent into these domains are blocked.
+The application does not support file uploads, email access, cloud-drive access, account integrations, persistent user profiles, or private client data storage.
 
-### 5. Technical Boundaries
-To prevent security and operational escalation, the system enforces the following boundaries:
-*   **No external account connections**: The app does not connect to email, calendar, or external accounts.
-*   **No automatic actions**: The app does not write, send, or execute actions on behalf of the user.
-*   **No file uploads**: The app accepts only plain text and numeric form answers.
+## Human Review
 
-### 6. No Financial ROI or Guaranteed Savings Claims
-The system does not estimate dollar savings, ROI, or financial values. LLM attempts to calculate financial benefits are blocked. Measurements must be expressed in non-financial units (e.g., minutes lost, number of ideas, capture attempts).
+Every completed Scenario Brief includes a human-review reminder. The suggested action is a starting point only. The user remains responsible for deciding whether it fits their business, customers, tools, and obligations.
 
-### 7. Agent 4 Safety Role
-Agent 4 (Safety and Quality Review Agent) acts as the final gatekeeper. It is equipped with a portable agent skill located in [.agents/skills/safety-reviewer/](file:///C:/Users/jason/Documents/antigravity/bold-hubble/wai-scenario-lab/core-lab/.agents/skills/safety-reviewer/SKILL.md) which instructs it to:
-- Inspect the output for any leaked PII (names, emails, phones) and flag it if found.
-- Detect any dollar-denominated claims, ROI, or financial projections and enforce fallback non-monetary units.
-- Block prohibited domains (legal, medical, etc.).
-- Ensure the mandatory AI disclosure/reminder is appended.
+## High-Risk Domain Exclusions
 
-### 8. Architectural Enforcement & Deprecations
-To guarantee that these principles are not just guidelines but system-level constraints, we implement the following:
-*   **Pydantic Input/Output Schemas**: All 4 agents in [workflow.py](file:///C:/Users/jason/Documents/antigravity/bold-hubble/wai-scenario-lab/core-lab/app/workflow.py) use strict Pydantic schemas (e.g. `ValueEvidenceInput` and `SafetyReviewOutput`) to validate intermediate payloads, preventing session data tampering.
-*   **Deprecation of ROI Calculator**: The server [roi_calculator_server.py](file:///C:/Users/jason/Documents/antigravity/bold-hubble/wai-scenario-lab/core-lab/mcp_server/roi_calculator_server.py) has been deprecated and excluded from the active pipeline to completely eliminate the capability of the system to calculate monetary opportunity costs or financial ROI.
-*   **Stateful Agent Edges**: Agent 4 reviews the consolidated state before any output is returned to the user interface, acting as a deterministic safety gate.
+The prototype does not provide legal, medical, mental-health, tax, employment, lending, housing, insurance, financial planning, or regulatory compliance advice. Inputs that push into those domains are blocked or withheld.
 
+## No Invented ROI
+
+The Scenario Lab does not calculate dollar savings, ROI, opportunity cost, annual value, marketing equity, guarantees, or financial projections. Measurements are limited to observable non-financial units such as minutes, incidents, ideas, or attempts.
+
+## No Automated Actions
+
+The app does not send messages, publish content, purchase items, file documents, submit forms, connect accounts, change settings, or perform account actions. It recommends at most one manual, low-risk, reversible next step.
+
+## Transparency Alignment
+
+In plain language, the prototype aligns with Colorado AI Act-style transparency expectations by telling users AI is involved, limiting use to a low-risk educational context, and keeping humans responsible for decisions.
+
+It aligns with FTC-style consumer protection expectations by avoiding inflated claims, unsupported savings, hidden automation, deceptive certainty, or advice outside the product's stated scope.
+
+## Evidence
+
+- Deterministic checks: `core-lab/app/services/safety.py`
+- Output withholding: `core-lab/app/services/brief_assembler.py`
+- Required disclosures: `core-lab/wai_scenario_config.json`
+- Safety skill: `core-lab/.agents/skills/safety-reviewer/SKILL.md`
+- Threat model: `core-lab/docs/stride-threat-model.md`

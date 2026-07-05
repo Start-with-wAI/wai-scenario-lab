@@ -1,0 +1,16 @@
+google-adk[gcp]>=2.0.0,<3.0.0
+a2a-sdk[http-server]~=0.3.22
+aiohttp>=3.13.4
+fastapi>=0.115.0
+uvicorn>=0.30.0
+python-dotenv>=1.0.0
+python-multipart>=0.0.9
+pydantic>=2.10.0
+mcp>=1.28.1
+google-cloud-logging>=3.12.0,<4.0.0
+google-cloud-aiplatform[evaluation,agent-engines]>=1.156.0
+opentelemetry-instrumentation-google-genai>=0.1.0,<1.0.0
+gcsfs>=2024.11.0
+requests>=2.31.0
+pytest>=8.0.0
+pytest-asyncio>=1.0.0

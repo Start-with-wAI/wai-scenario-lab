@@ -84,7 +84,13 @@
       "APPROVED_WITH_LIMITATION",
       "REVISE",
       "BLOCKED"
-    ]
+    ],
+    "final_status_mapping": {
+      "APPROVED": "APPROVED",
+      "APPROVED_WITH_LIMITATION": "NEEDS_CLARIFICATION",
+      "REVISE": "HUMAN_REVIEW_REQUIRED",
+      "BLOCKED": "BLOCKED"
+    }
   },
   "output_constraints": {
     "what_we_heard_max_words": 75,

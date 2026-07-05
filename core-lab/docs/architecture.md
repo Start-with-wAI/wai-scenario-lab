@@ -1,48 +1,45 @@
 # Architecture Design
 
-## Core Application Structure
-The `core-lab/` directory is the single active, runnable wAI Scenario Lab application. Duplicate root-level structures (such as `app/`, `docs/`, `mcp_server/`, `tests/`) from Verónica's Day 1 manual draft are kept as historical reference and are not merged directly to prevent namespace collisions and build system pollution.
+The `core-lab/` directory is the active runnable wAI Scenario Lab application. Older sprint and recovery documents remain as historical evidence, but the final architecture source is this file plus `docs/architecture/agent-graph.md`.
 
-## Design Highlights
+## Core Design
 
-### 1. Config-Driven Scenarios
-The application behavior, user interface metadata, question definitions, input validation messages, and scenario-specific parameters are fully defined in [wai_scenario_config.json](file:///c:/Users/MissV/Documents/Google/wai-scenario-lab/wai-scenario-lab/core-lab/wai_scenario_config.json). This allows adding or updating podcast scenarios without modifying the agent implementation or orchestration logic.
+### Config-Driven Scenarios
 
-### 2. Four-Agent Flow
-Orchestrated using the Google Agent Development Kit (ADK) 2.0 graph workflow, the system routes the user's answers sequentially through four specialized agents:
+Scenario behavior, UI metadata, question definitions, validation messages, measurements, podcast references, and scenario-specific guardrails are defined in `core-lab/wai_scenario_config.json`. The UI, API validation, deterministic workflow adapter, and MCP server all read from this shared source.
+
+### Four-Agent Flow
+
 ```mermaid
 graph TD
-    START --> Agent1["Agent 1: Scenario Guide<br>(Verónica)"]
-    Agent1 --> Agent2["Agent 2: Workflow Analysis<br>(Verónica)"]
-    Agent2 --> Agent3["Agent 3: Value & Evidence<br>(Jason)"]
-    Agent3 --> Agent4["Agent 4: Safety & Quality Review<br>(Jason)"]
-    Agent4 --> SafetyGate{"Safety Gate Router"}
-    SafetyGate -- "APPROVED" --> COMPLETED
-    SafetyGate -- "APPROVED_WITH_LIMITATION" --> COMPLETED_WITH_LIMITATION
-    SafetyGate -- "BLOCKED" --> BLOCKED_SCREEN
-    SafetyGate -- "REVISE" --> HumanTriage["Human Triage Node<br>(RequestInput)"]
-    HumanTriage --> Agent4
+    START --> Agent1["Agent 1: Scenario Guide"]
+    Agent1 --> Agent2["Agent 2: Workflow Analysis"]
+    Agent2 --> Agent3["Agent 3: Value and Evidence"]
+    Agent3 --> Agent4["Agent 4: Safety and Quality Review"]
+    Agent4 --> SafetyGate{"Deterministic Safety Gate"}
+    SafetyGate -- "APPROVED" --> Brief["Brief Formatter"]
+    SafetyGate -- "APPROVED_WITH_LIMITATION" --> Brief
+    SafetyGate -- "REVISE" --> HumanReview["Human Review Required"]
+    SafetyGate -- "BLOCKED" --> Blocked["Blocked Output"]
 ```
 
-*   **Agent 1 (Scenario Guide)**: Sanitizes input, redacts PII, and structures raw answers.
-*   **Agent 2 (Workflow Analyst)**: Identifies a single cautious process friction and proposes exactly one manual next step.
-*   **Agent 3 (Value & Evidence)**: Connects to external calculator tools to derive baselines and measurement guidance.
-*   **Agent 4 (Safety & Quality Review)**: Runs safety gates on output structure, compliance limits, and professional advice boundaries.
+- **Scenario Guide** structures raw answers, identifies missing information, and strips obvious sensitive data.
+- **Workflow Analysis** identifies one likely friction point and proposes exactly one low-risk manual action.
+- **Value and Evidence** selects one configured non-financial measurement and labels evidence strength.
+- **Safety and Quality Review** checks privacy, high-risk domains, unsupported claims, one-action restraint, and required disclosures.
 
-### 3. Deterministic Safety Gate
-To ensure high-risk or low-quality content never reaches the user, a deterministic routing function `evaluate_safety_gate` parses the Pydantic payload of Agent 4. It routes the execution graph to:
-*   **APPROVED**: Renders the complete Scenario Brief.
-*   **APPROVED_WITH_LIMITATION**: Renders the brief with a caution banner.
-*   **BLOCKED**: Terminates execution immediately.
-*   **REVISE**: Routes to a human-in-the-loop triage node (`RequestInput`) for manual correction, avoiding non-deterministic LLM loop errors.
+### ADK Graph And Local Adapter
 
-### 4. Role of MCP Servers
-Model Context Protocol (MCP) servers (e.g., `roi_calculator_server.py`) expose deterministic python calculation tools to Agent 3. This decouples arithmetic from the LLM, preventing hallucinated calculations while keeping the core agent logic clean and focused.
+`core-lab/app/workflow.py` includes an ADK-style graph workflow definition. Because live ADK/Gemini execution requires credentials and project configuration, the same file also contains deterministic local nodes used by tests and the local demo. This avoids pretending live cloud execution occurred while preserving the intended graph architecture.
 
-## Phase 4 Additions
-Phase 4 introduced:
-*   **Deterministic Safety Utilities**: Pre-filters and sanitizes inputs/outputs (PII/confidentiality redaction, domain policy validation, prohibited automation detection).
-*   **Safe Scenario Config MCP Server**: Exposes resources and tools grounded strictly in the active configuration file, entirely decoupled from ROI or financial metrics.
-*   **Scenario Brief Assembler**: Combines validated outputs into a single payload while ensuring `REVISE` and `BLOCKED` requests withhold sensitive sections.
-*   **Comprehensive Test Coverage**: Unit and integration tests covering safety detection, MCP servers, brief assembly, and overall workflow pipeline routing.
+### MCP Server
 
+`core-lab/mcp_server/scenario_config_server.py` is the active MVP MCP server. It exposes scenario IDs, titles, descriptions, questions, measurements, and metadata from the scenario configuration. It does not calculate ROI, fetch private data, or require external network access during tests.
+
+### Deterministic Safety Gate
+
+`core-lab/app/services/safety.py` checks for PII-like patterns, high-risk domains, prohibited automation requests, unsupported ROI/savings claims, and absolute certainty language. `core-lab/app/services/brief_assembler.py` withholds completed brief details for revision-required or blocked paths.
+
+### Final Architecture Reference
+
+See `core-lab/docs/architecture/agent-graph.md` for graph nodes, transitions, status mapping, human-review gate, and deterministic routing details.

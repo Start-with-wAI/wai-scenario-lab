@@ -1,3 +1,12 @@
+# Archived Deprecated ROI Calculator Test Reference
+
+The Model Context Protocol (MCP) server `roi_calculator_server.py` and its tests have been deprecated and removed from the active runtime and test suite to enforce wAI's non-financial calculation boundary.
+
+The project now uses strictly time-loss/observation-based metrics and completely avoids calculating monetary opportunity costs, dollar savings, or marketing equity.
+
+Below is the archived legacy test code from `test_roi_calculator.py` for historical reference:
+
+```python
 import pytest
 from mcp_server.roi_calculator_server import (
     calculate_task_tax,
@@ -44,3 +53,4 @@ def test_calculate_content_factory_value() -> None:
 def test_calculate_content_factory_value_invalid() -> None:
     with pytest.raises(ValueError):
         calculate_content_factory_value(1.0, "Invalid Asset")
+```

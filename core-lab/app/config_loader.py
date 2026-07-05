@@ -681,7 +681,7 @@ def render_error_page(error_message: str) -> str:
 
 
 def render_checkpoint_page(response: dict) -> str:
-    """Renders the Sprint 3 checkpoint success page with escaped JSON and trace data."""
+    """Renders the Sprint 4 checkpoint success page with escaped JSON and trace data."""
     import json
     import html
 
@@ -689,21 +689,62 @@ def render_checkpoint_page(response: dict) -> str:
     adapter_status = response.get("adapter_status", "")
 
     agent_1_input_pretty = json.dumps(response.get("agent_1_input", {}), indent=2, ensure_ascii=False)
-    graph_trace_pretty = json.dumps(response.get("graph_transition_trace", []), indent=2, ensure_ascii=False)
     not_run_pretty = json.dumps(response.get("not_run", []), indent=2, ensure_ascii=False)
+
+    is_sprint_4 = "safety_precheck" in response
+
+    safety_precheck_pretty = ""
+    terminal_route_pretty = ""
+    safety_trace_pretty = ""
+    graph_trace_pretty = ""
+
+    if is_sprint_4:
+        safety_precheck_pretty = json.dumps(response.get("safety_precheck", {}), indent=2, ensure_ascii=False)
+        terminal_route_pretty = json.dumps(response.get("terminal_route_preview", {}), indent=2, ensure_ascii=False)
+        safety_trace_pretty = json.dumps(response.get("safety_routing_trace", []), indent=2, ensure_ascii=False)
+    else:
+        graph_trace_pretty = json.dumps(response.get("graph_transition_trace", []), indent=2, ensure_ascii=False)
 
     esc_msg = html.escape(checkpoint_msg)
     esc_status = html.escape(adapter_status)
     esc_input = html.escape(agent_1_input_pretty)
-    esc_trace = html.escape(graph_trace_pretty)
     esc_not_run = html.escape(not_run_pretty)
+
+    esc_precheck = html.escape(safety_precheck_pretty)
+    esc_terminal = html.escape(terminal_route_pretty)
+    esc_safety_trace = html.escape(safety_trace_pretty)
+
+    badge_text = "Sprint 4 Checkpoint" if is_sprint_4 else "Checkpoint 3"
+    title_text = "Safety Routing Verification" if is_sprint_4 else "Workflow Adapter Verification"
+
+    precheck_html = ""
+    if is_sprint_4:
+        precheck_html = f"""
+            <div class="section-title">Deterministic Safety Precheck Result</div>
+            <p><span class="badge" style="background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">Deterministic Precheck (No Agent 4)</span></p>
+            <pre>{esc_precheck}</pre>
+
+            <div class="section-title">Terminal Route Preview</div>
+            <p>Maps the release status to the appropriate final redirect page:</p>
+            <pre>{esc_terminal}</pre>
+
+            <div class="section-title">Safety Routing Trace</div>
+            <pre>{esc_safety_trace}</pre>
+        """
+    else:
+        esc_trace = html.escape(graph_trace_pretty)
+        precheck_html = f"""
+            <div class="section-title">Dry-Run Graph Transition Trace</div>
+            <p>The sequential transition path configured for this agent graph is tracked below:</p>
+            <pre>{esc_trace}</pre>
+        """
 
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>wAI Scenario Lab - Sprint 3 Checkpoint</title>
+    <title>wAI Scenario Lab - {badge_text}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
@@ -825,8 +866,8 @@ def render_checkpoint_page(response: dict) -> str:
 <body>
     <div class="container">
         <div class="card">
-            <div class="badge">Checkpoint 3</div>
-            <h1>Workflow Adapter Verification</h1>
+            <div class="badge">{badge_text}</div>
+            <h1>{title_text}</h1>
 
             <div class="checkpoint-banner">
                 <strong>{esc_msg}</strong>
@@ -836,16 +877,14 @@ def render_checkpoint_page(response: dict) -> str:
                 Adapter Status: <strong>{esc_status}</strong>
             </div>
 
+            {precheck_html}
+
             <div class="section-title">Agent 1 Input Preparation</div>
-            <p>The following structured payload is ready to be passed to Agent 1 (Scenario Guide):</p>
+            <p>The following structured payload was prepared by the workflow adapter:</p>
             <pre>{esc_input}</pre>
 
-            <div class="section-title">Dry-Run Graph Transition Trace</div>
-            <p>The sequential transition path configured for this agent graph is tracked below:</p>
-            <pre>{esc_trace}</pre>
-
             <div class="section-title">Intentionally Not Executed Yet</div>
-            <p>To preserve product boundaries, the following live tasks have been bypassed in Sprint 3:</p>
+            <p>To preserve product boundaries, the following live tasks have been bypassed in this checkpoint:</p>
             <pre>{esc_not_run}</pre>
 
             <a href="/" class="btn-back">← Edit My Answers</a>

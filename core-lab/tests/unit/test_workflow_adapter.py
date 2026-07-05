@@ -116,12 +116,12 @@ class TestWorkflowAdapter(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertIn(
-            "Sprint 3 checkpoint: normalized input prepared for workflow adapter. Agent workflow has not run yet.",
+            "Sprint 4 checkpoint: deterministic safety routing preview completed. Agent workflow has not run yet.",
             response.text
         )
         self.assertIn("READY_FOR_AGENT_1", response.text)
-        self.assertIn("scenario_guide_agent", response.text)
-        self.assertIn("terminal_route_pending", response.text)
+        self.assertIn("RENDER_BRIEF", response.text)
+        self.assertIn("safety_precheck", response.text)
 
     def test_post_route_invalid(self):
         client = TestClient(app)

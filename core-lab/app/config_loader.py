@@ -50,14 +50,14 @@ def load_scenario_config() -> dict:
         raise ConfigLoadError("Unexpected error loading configuration.")
 
 
-def get_public_episode_01_config() -> dict:
-    """Retrieves selected config items for Episode 01.
+def get_public_scenario_lab_config() -> dict:
+    """Retrieves selected config items for the Scenario Lab.
 
     Returns:
-        A dictionary containing app metadata, shared UI copy, and Episode 01 scenario config.
+        A dictionary containing app metadata, shared UI copy, and all scenarios configuration.
 
     Raises:
-        ConfigLoadError: If required keys are missing or the scenario is not found.
+        ConfigLoadError: If required keys are missing.
     """
     config = load_scenario_config()
 
@@ -68,14 +68,10 @@ def get_public_episode_01_config() -> dict:
     if not app_meta or not shared_ui or not scenarios:
         raise ConfigLoadError("Required top-level keys ('app', 'shared_ui', 'scenarios') not found in config.")
 
-    cool_down_tax = scenarios.get("cool_down_tax")
-    if not cool_down_tax:
-        raise ConfigLoadError("Scenario 'cool_down_tax' not found in config.")
-
     return {
         "app": app_meta,
         "shared_ui": shared_ui,
-        "scenario": cool_down_tax
+        "scenarios": scenarios
     }
 
 
@@ -164,6 +160,26 @@ def render_question_html(q: dict, value: any = None, error: str = None) -> str:
             </div>
         </fieldset>
         """
+
+    elif q_type == "select":
+        options = q.get("options", [])
+        options_html = '<option value="">Select an option...</option>'
+        for opt in options:
+            opt_val = opt.get("value", "")
+            opt_label = opt.get("label", "")
+            selected = "selected" if val_str == opt_val else ""
+            options_html += f'<option value="{opt_val}" {selected}>{opt_label}</option>'
+        return f"""
+        <div class="form-group {has_error_class}">
+            <label for="{q_id}">{label}</label>
+            {help_html}
+            {error_html}
+            <select id="{q_id}" name="{q_id}" {required} {aria_describedby}>
+                {options_html}
+            </select>
+        </div>
+        """
+
     else:
         return f"""
         <div class="form-group {has_error_class}">
@@ -175,11 +191,11 @@ def render_question_html(q: dict, value: any = None, error: str = None) -> str:
         """
 
 
-def render_episode_01_page(config: dict, values: dict | None = None, errors: dict | None = None) -> str:
-    """Renders the complete Episode 01 questionnaire HTML page using config settings."""
+
+def render_scenario_lab_page(config: dict) -> str:
+    """Renders the complete dynamic configuration-driven Scenario Lab landing page."""
     app_meta = config["app"]
     shared_ui = config["shared_ui"]
-    scenario = config["scenario"]
 
     app_name = app_meta.get("name", "wAI Scenario Lab")
     landing_headline = shared_ui.get("landing_headline", "")
@@ -187,39 +203,14 @@ def render_episode_01_page(config: dict, values: dict | None = None, errors: dic
     privacy_notice = shared_ui.get("privacy_notice", "")
     transparency_notice = shared_ui.get("transparency_notice", "")
 
-    ep_title = scenario.get("title", "")
-    ep_num = scenario.get("episode_number", "01")
-    ep_desc = scenario.get("short_description", "")
-    ep_context = scenario.get("context", "")
-    ep_measure = scenario.get("measurement_preview", "")
-
-    val_dict = values or {}
-    err_dict = errors or {}
-
-    error_summary_html = ""
-    if err_dict:
-        error_summary_html = """
-        <div class="error-summary" role="alert">
-            <h3 class="error-summary-title">Please review the highlighted fields</h3>
-            <p>Some answers need attention. Review the highlighted fields and make the requested corrections.</p>
-        </div>
-        """
-
-    questions_html = ""
-    questions = scenario.get("questions", [])
-    sorted_questions = sorted(questions, key=lambda x: x.get("order", 0))
-    for q in sorted_questions:
-        q_id = q.get("id")
-        questions_html += render_question_html(q, value=val_dict.get(q_id), error=err_dict.get(q_id))
-
-    submit_label = shared_ui.get("question_submit_label", "Analyze My Scenario")
+    config_json_str = json.dumps(config)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{app_name} - {ep_title}</title>
+    <title>{app_name}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
@@ -331,7 +322,55 @@ def render_episode_01_page(config: dict, values: dict | None = None, errors: dic
             margin-bottom: 0;
         }}
 
-        .episode-card {{
+        /* Scenario Grid UI */
+        .scenario-grid {{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+        }}
+
+        .scenario-card {{
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }}
+
+        .scenario-card:hover {{
+            border-color: rgba(99, 102, 241, 0.4);
+            background: rgba(99, 102, 241, 0.02);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -10px rgba(99, 102, 241, 0.15);
+        }}
+
+        .scenario-title {{
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }}
+
+        .scenario-desc {{
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }}
+
+        .scenario-meta {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            font-weight: 500;
+        }}
+
+        /* Dynamic Form Section */
+        .form-section {{
+            display: none;
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
             border: 1px solid var(--card-border);
             border-radius: 20px;
@@ -339,170 +378,101 @@ def render_episode_01_page(config: dict, values: dict | None = None, errors: dic
             margin-bottom: 40px;
         }}
 
-        .episode-tag {{
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--accent-color);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+        .form-header {{
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 16px;
+        }}
+
+        .form-title {{
+            font-size: 1.5rem;
+            font-weight: 700;
             margin-bottom: 8px;
         }}
 
-        .episode-title {{
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin: 0 0 16px 0;
-            background: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }}
-
-        .episode-desc {{
-            font-size: 1.05rem;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-        }}
-
-        .episode-context {{
+        .form-context {{
             font-size: 0.95rem;
             color: var(--text-secondary);
-            border-left: 2px solid var(--accent-color);
-            padding-left: 16px;
-            margin-bottom: 24px;
-        }}
-
-        .measurement-preview {{
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background-color: rgba(16, 185, 129, 0.06);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            border-radius: 12px;
-            padding: 12px 16px;
-            font-size: 0.9rem;
-            color: #a7f3d0;
-        }}
-
-        .measurement-preview svg {{
-            color: var(--success-color);
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
         }}
 
         .form-group {{
-            margin-bottom: 28px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
         }}
 
-        label {{
-            display: block;
+        .form-group label, .form-group legend {{
             font-size: 0.95rem;
             font-weight: 500;
             margin-bottom: 8px;
+            color: var(--text-primary);
+        }}
+
+        .form-group legend {{
+            border: none;
+            padding: 0;
         }}
 
         .help-text {{
-            display: block;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
             margin-bottom: 8px;
+            display: block;
         }}
 
-        input[type="text"],
-        input[type="number"],
-        textarea {{
-            width: 100%;
-            padding: 14px 16px;
-            background-color: rgba(255, 255, 255, 0.03);
+        .field-error {{
+            color: var(--danger-color);
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 4px;
+            display: block;
+        }}
+
+        .has-error input[type="text"], 
+        .has-error input[type="number"], 
+        .has-error textarea,
+        .has-error select {{
+            border-color: var(--danger-color) !important;
+            background-color: rgba(239, 68, 68, 0.03) !important;
+        }}
+
+        input[type="text"], 
+        input[type="number"], 
+        textarea,
+        select {{
+            background-color: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--card-border);
-            border-radius: 10px;
+            border-radius: 8px;
+            padding: 12px 16px;
             color: var(--text-primary);
             font-family: var(--font-sans);
             font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s ease;
             box-sizing: border-box;
-            transition: all 0.2s ease;
+            width: 100%;
         }}
 
-        input[type="text"]:focus,
-        input[type="number"]:focus,
-        textarea:focus {{
-            outline: none;
+        input[type="text"]:focus, 
+        input[type="number"]:focus, 
+        textarea:focus,
+        select:focus {{
             border-color: var(--accent-color);
-            background-color: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            background-color: rgba(255, 255, 255, 0.04);
         }}
 
         textarea {{
-            resize: vertical;
             min-height: 100px;
+            resize: vertical;
         }}
 
-        .radio-group {{
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 10px;
-        }}
-
-        .radio-label {{
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            background-color: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--card-border);
-            border-radius: 10px;
+        select {{
             cursor: pointer;
-            transition: all 0.2s ease;
-        }}
-
-        .radio-label:hover {{
-            background-color: rgba(255, 255, 255, 0.04);
-            border-color: rgba(255, 255, 255, 0.15);
-        }}
-
-        .radio-label input[type="radio"] {{
-            margin: 0;
-            accent-color: var(--accent-color);
-        }}
-
-        fieldset {{
-            border: none;
-            padding: 0;
-            margin: 0;
-        }}
-
-        fieldset legend {{
-            font-size: 0.95rem;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }}
-
-        .btn-submit {{
-            display: block;
-            width: 100%;
-            padding: 16px;
-            background: var(--accent-gradient);
-            color: #ffffff;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }}
-
-        .btn-submit:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-        }}
-
-        .btn-submit:active {{
-            transform: translateY(0);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
         }}
 
         .number-input-wrapper {{
@@ -512,107 +482,874 @@ def render_episode_01_page(config: dict, values: dict | None = None, errors: dic
         }}
 
         .number-input-wrapper input {{
-            flex-grow: 1;
+            width: 120px;
         }}
 
         .number-unit {{
             font-size: 0.9rem;
             color: var(--text-secondary);
-            background-color: rgba(255, 255, 255, 0.05);
-            padding: 14px 16px;
-            border-radius: 10px;
-            border: 1px solid var(--card-border);
-            white-space: nowrap;
         }}
 
-        /* Error Styles */
+        .radio-group {{
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }}
+
+        .radio-label {{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            user-select: none;
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            box-sizing: border-box;
+            width: 100%;
+        }}
+
+        .radio-label input {{
+            margin: 0;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-color);
+        }}
+
+        /* Buttons and controls */
+        .btn {{
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }}
+
+        .btn-primary {{
+            background: var(--accent-gradient);
+            color: #ffffff;
+        }}
+
+        .btn-primary:hover {{
+            opacity: 0.95;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }}
+
+        .btn-secondary {{
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+            margin-right: 12px;
+        }}
+
+        .btn-secondary:hover {{
+            background-color: rgba(255, 255, 255, 0.1);
+        }}
+
+        .form-actions {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+            border-top: 1px solid var(--card-border);
+            padding-top: 24px;
+        }}
+
+        /* Processing/Loading Screen */
+        .processing-section {{
+            display: none;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+        }}
+
+        .spinner {{
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.05);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            margin: 0 auto 24px auto;
+        }}
+
+        @keyframes spin {{
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
+        }}
+
+        .processing-step {{
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }}
+
+        .processing-sub {{
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }}
+
+        /* Error Summary */
         .error-summary {{
-            background-color: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background-color: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
             border-radius: 12px;
             padding: 16px 20px;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
         }}
 
         .error-summary-title {{
             color: #fca5a5;
-            margin: 0 0 6px 0;
-            font-size: 1.05rem;
+            font-size: 0.95rem;
             font-weight: 600;
+            margin: 0 0 4px 0;
         }}
 
-        .error-summary p {{
-            color: var(--text-secondary);
-            margin: 0;
-            font-size: 0.9rem;
-        }}
-
-        .field-error {{
-            display: block;
-            color: #f87171;
+        .error-summary-text {{
+            color: #fca5a5;
             font-size: 0.85rem;
-            font-weight: 500;
+            margin: 0;
+        }}
+
+        /* Results / Scenario Brief Rendering */
+        .result-section {{
+            display: none;
+            width: 100%;
+        }}
+
+        .brief-card {{
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+        }}
+
+        .brief-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 24px;
+        }}
+
+        .brief-title {{
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 0%, #d1d5db 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+
+        .brief-section {{
+            margin-bottom: 32px;
+        }}
+
+        .brief-section:last-of-type {{
+            margin-bottom: 0;
+        }}
+
+        .brief-section-title {{
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent-color);
+            margin-bottom: 12px;
+        }}
+
+        .brief-text {{
+            font-size: 1.05rem;
+            color: var(--text-primary);
+        }}
+
+        .brief-bullets {{
+            margin: 0;
+            padding-left: 20px;
+            font-size: 1.025rem;
+            color: var(--text-primary);
+        }}
+
+        .brief-bullets li {{
             margin-bottom: 8px;
         }}
 
-        .form-group.has-error input[type="text"],
-        .form-group.has-error input[type="number"],
-        .form-group.has-error textarea {{
-            border-color: rgba(239, 68, 68, 0.5);
-            background-color: rgba(239, 68, 68, 0.02);
+        .brief-bullets li:last-child {{
+            margin-bottom: 0;
         }}
 
-        .form-group.has-error input[type="text"]:focus,
-        .form-group.has-error input[type="number"]:focus,
-        .form-group.has-error textarea:focus {{
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
-            border-color: #ef4444;
+        .limitation-banner {{
+            background-color: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 32px;
+            font-size: 0.95rem;
         }}
 
-        .form-group.has-error .radio-label {{
-            border-color: rgba(239, 68, 68, 0.3);
+        .withheld-card {{
+            background-color: rgba(239, 68, 68, 0.03);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+            text-align: center;
+        }}
+
+        .withheld-title {{
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fca5a5;
+            margin-bottom: 16px;
+        }}
+
+        .withheld-message {{
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }}
+
+        .withheld-instructions {{
+            background-color: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border-radius: 12px;
+            padding: 16px 20px;
+            font-size: 0.95rem;
+            text-align: left;
+            margin-bottom: 0;
+        }}
+
+        /* Metrics grid */
+        .metrics-grid {{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background-color: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 16px;
+        }}
+
+        .metric-card {{
+            display: flex;
+            flex-direction: column;
+        }}
+
+        .metric-label {{
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }}
+
+        .metric-value {{
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }}
+
+        .metric-sub {{
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }}
+
+        /* Disclosure box */
+        .disclosure-box {{
+            border-top: 1px solid var(--card-border);
+            padding-top: 24px;
+            margin-top: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }}
+
+        .disclosure-text {{
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }}
+
+        .cta-card {{
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 16px;
+            text-align: left;
+        }}
+
+        .cta-title {{
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+        }}
+
+        .cta-desc {{
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }}
+
+        .cta-link {{
+            font-size: 0.85rem;
+            color: #818cf8;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+        }}
+
+        .cta-link:hover {{
+            text-decoration: underline;
+        }}
+
+        .result-actions {{
+            display: flex;
+            justify-content: center;
+            gap: 16px;
         }}
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <header class="header">
             <span class="logo">{app_name}</span>
-            <span class="badge">Prototype</span>
+            <span class="badge">Prototype v{app_meta.get("version", "0.2.0")}</span>
         </header>
 
-        <main>
+        <!-- Landing Selection Page -->
+        <main id="view-selection">
             <h1>{landing_headline}</h1>
             <p class="lead">{landing_supporting_copy}</p>
 
-            {error_summary_html}
-
-            <section class="notice-box" aria-label="Privacy and transparency">
-                <div class="notice-title">Important Notices</div>
+            <section class="notice-box">
+                <div class="notice-title">Important Disclosures</div>
                 <div class="notice-item"><strong>Privacy Notice:</strong> {privacy_notice}</div>
                 <div class="notice-item"><strong>Transparency Notice:</strong> {transparency_notice}</div>
             </section>
 
-            <section class="episode-card">
-                <div class="episode-tag">Episode {ep_num}</div>
-                <h2 class="episode-title">{ep_title}</h2>
-                <p class="episode-desc">{ep_desc}</p>
-                <div class="episode-context">{ep_context}</div>
-
-                <div class="measurement-preview">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                    </svg>
-                    <span>Possible measurement: <strong>{ep_measure}</strong></span>
-                </div>
-            </section>
-
-            <form method="post" action="/">
-                {questions_html}
-                <button type="submit" class="btn-submit">{submit_label}</button>
-            </form>
+            <div class="scenario-grid" id="scenario-cards-container">
+                <!-- Dynamically populated from JS -->
+            </div>
         </main>
+
+        <!-- Questionnaire Section -->
+        <section class="form-section" id="view-form">
+            <div class="form-header">
+                <div class="form-title" id="lbl-scenario-title">Scenario Title</div>
+                <div class="form-context" id="lbl-scenario-context">Context...</div>
+            </div>
+
+            <div id="error-summary-container"></div>
+
+            <form id="scenario-questions-form" onsubmit="handleFormSubmit(event)">
+                <input type="hidden" id="hidden-scenario-id" name="scenario_id" />
+                <div id="dynamic-questions-container">
+                    <!-- Dynamically loaded questions go here -->
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="showSelectionView()">
+                        {shared_ui.get("change_scenario_label", "Choose a Different Scenario")}
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        {shared_ui.get("question_submit_label", "Analyze My Scenario")}
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Processing Screen -->
+        <section class="processing-section" id="view-processing">
+            <div class="spinner"></div>
+            <div class="processing-step" id="lbl-processing-step">Reviewing the information provided</div>
+            <div class="processing-sub">Running deterministic wAI safety checks...</div>
+        </section>
+
+        <!-- Result View -->
+        <section class="result-section" id="view-result">
+            <!-- Dynamically populated Scenario Brief -->
+            <div id="result-brief-container"></div>
+
+            <div class="result-actions">
+                <button type="button" class="btn btn-secondary" onclick="showSelectionView()">
+                    {shared_ui.get("change_scenario_label", "Choose a Different Scenario")}
+                </button>
+                <button type="button" class="btn btn-primary" onclick="restartCurrentScenario()">
+                    {shared_ui.get("start_over_label", "Start Over")}
+                </button>
+            </div>
+        </section>
     </div>
+
+    <!-- Configuration Data Injected Here -->
+    <script id="scenario-config" type="application/json">
+        {config_json_str}
+    </script>
+
+    <!-- Client-Side UI Controller -->
+    <script>
+        const config = JSON.parse(document.getElementById('scenario-config').textContent);
+        const scenarios = config.scenarios;
+        const sharedUi = config.shared_ui;
+
+        // Initialize Selection cards
+        document.addEventListener('DOMContentLoaded', () => {{
+            const container = document.getElementById('scenario-cards-container');
+            container.innerHTML = '';
+            
+            Object.keys(scenarios).forEach(key => {{
+                const s = scenarios[key];
+                const card = document.createElement('div');
+                card.className = 'scenario-card';
+                card.onclick = () => selectScenario(s.scenario_id);
+                
+                card.innerHTML = `
+                    <div class="scenario-title">${{escapeHtml(s.title)}}</div>
+                    <div class="scenario-desc">${{escapeHtml(s.short_description)}}</div>
+                    <div class="scenario-meta">
+                        <span>Est. time: ${{escapeHtml(s.estimated_completion_minutes)}} mins</span>
+                        <span>Preview: ${{escapeHtml(s.measurement_preview)}} &rarr;</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            }});
+        }});
+
+        function selectScenario(scenarioId) {{
+            const s = scenarios[scenarioId];
+            if (!s) return;
+
+            document.getElementById('hidden-scenario-id').value = s.scenario_id;
+            document.getElementById('lbl-scenario-title').textContent = s.title;
+            document.getElementById('lbl-scenario-context').textContent = s.context;
+
+            // Render Questions
+            const qContainer = document.getElementById('dynamic-questions-container');
+            qContainer.innerHTML = '';
+            document.getElementById('error-summary-container').innerHTML = '';
+
+            const sortedQuestions = [...s.questions].sort((a, b) => a.order - b.order);
+            sortedQuestions.forEach(q => {{
+                const group = document.createElement('div');
+                group.className = 'form-group';
+                group.id = `group-${{q.id}}`;
+
+                let helpHtml = q.help_text ? `<small class="help-text">${{escapeHtml(q.help_text)}}</small>` : '';
+                let labelHtml = `<label for="${{q.id}}">${{escapeHtml(q.label)}}</label>`;
+
+                let inputHtml = '';
+                if (q.type === 'text') {{
+                    inputHtml = `<input type="text" id="${{q.id}}" name="${{q.id}}" ${{q.required ? 'required' : ''}} placeholder="Describe briefly..." />`;
+                }} else if (q.type === 'textarea') {{
+                    inputHtml = `<textarea id="${{q.id}}" name="${{q.id}}" ${{q.required ? 'required' : ''}} placeholder="Enter details here..."></textarea>`;
+                }} else if (q.type === 'number') {{
+                    const unitHtml = q.unit ? `<span class="number-unit">${{escapeHtml(q.unit)}}</span>` : '';
+                    inputHtml = `
+                        <div class="number-input-wrapper">
+                            <input type="number" id="${{q.id}}" name="${{q.id}}" ${{q.required ? 'required' : ''}} min="${{q.min ?? 0}}" max="${{q.max ?? 480}}" step="${{q.step ?? 1}}" />
+                            ${{unitHtml}}
+                        </div>
+                    `;
+                }} else if (q.type === 'radio') {{
+                    labelHtml = `<legend>${{escapeHtml(q.label)}}</legend>`;
+                    let optionsHtml = '';
+                    q.options.forEach(opt => {{
+                        optionsHtml += `
+                            <label class="radio-label">
+                                <input type="radio" name="${{q.id}}" value="${{escapeHtml(opt.value)}}" ${{q.required ? 'required' : ''}} />
+                                <span>${{escapeHtml(opt.label)}}</span>
+                            </label>
+                        `;
+                    }});
+                    inputHtml = `<div class="radio-group">${{optionsHtml}}</div>`;
+                }} else if (q.type === 'select') {{
+                    let optionsHtml = '<option value="">Select an option...</option>';
+                    q.options.forEach(opt => {{
+                        optionsHtml += `<option value="${{escapeHtml(opt.value)}}">${{escapeHtml(opt.label)}}</option>`;
+                    }});
+                    inputHtml = `
+                        <select id="${{q.id}}" name="${{q.id}}" ${{q.required ? 'required' : ''}}>
+                            ${{optionsHtml}}
+                        </select>
+                    `;
+                }}
+
+                group.innerHTML = `
+                    ${{labelHtml}}
+                    ${{helpHtml}}
+                    <div id="${{q.id}}-error-msg"></div>
+                    ${{inputHtml}}
+                `;
+                qContainer.appendChild(group);
+            }});
+
+            // Switch Views
+            document.getElementById('view-selection').style.display = 'none';
+            document.getElementById('view-form').style.display = 'block';
+            document.getElementById('view-processing').style.display = 'none';
+            document.getElementById('view-result').style.display = 'none';
+        }}
+
+        function showSelectionView() {{
+            document.getElementById('view-selection').style.display = 'block';
+            document.getElementById('view-form').style.display = 'none';
+            document.getElementById('view-processing').style.display = 'none';
+            document.getElementById('view-result').style.display = 'none';
+        }}
+
+        function restartCurrentScenario() {{
+            const scenarioId = document.getElementById('hidden-scenario-id').value;
+            selectScenario(scenarioId);
+        }}
+
+        // Dynamic Client-side validation
+        function validateForm(scenarioId) {{
+            const s = scenarios[scenarioId];
+            const errors = {{}};
+            let hasErrors = false;
+
+            s.questions.forEach(q => {{
+                let val = '';
+                if (q.type === 'radio') {{
+                    const selectedOpt = document.querySelector(`input[name="${{q.id}}"]:checked`);
+                    val = selectedOpt ? selectedOpt.value : '';
+                }} else {{
+                    val = document.getElementById(q.id).value.trim();
+                }}
+
+                // Required check
+                if (q.required && !val) {{
+                    errors[q.id] = q.validation?.required ?? 'This field is required.';
+                    hasErrors = true;
+                    return;
+                }}
+
+                if (val) {{
+                    // Text validation
+                    if (q.type === 'text' || q.type === 'textarea') {{
+                        if (q.max_length && val.length > q.max_length) {{
+                            errors[q.id] = q.validation?.too_long ?? `Max length is ${{q.max_length}} characters.`;
+                            hasErrors = true;
+                        }}
+                    }}
+                    // Number validation
+                    if (q.type === 'number') {{
+                        const num = parseFloat(val);
+                        if (isNaN(num)) {{
+                            errors[q.id] = q.validation?.non_numeric ?? 'Please enter a valid number.';
+                            hasErrors = true;
+                        }} else {{
+                            if (!Number.isInteger(num)) {{
+                                errors[q.id] = q.validation?.whole_number ?? 'Please enter a whole number.';
+                                hasErrors = true;
+                            }}
+                            if (q.min !== undefined && num < q.min) {{
+                                errors[q.id] = q.validation?.below_min ?? `Minimum value is ${{q.min}}.`;
+                                hasErrors = true;
+                            }}
+                            if (q.max !== undefined && num > q.max) {{
+                                errors[q.id] = q.validation?.above_max ?? `Maximum value is ${{q.max}}.`;
+                                hasErrors = true;
+                            }}
+                        }}
+                    }}
+                }}
+            }});
+
+            return {{ hasErrors, errors }};
+        }}
+
+        async function handleFormSubmit(event) {{
+            event.preventDefault();
+            const scenarioId = document.getElementById('hidden-scenario-id').value;
+            
+            // Clean previous errors
+            document.querySelectorAll('.form-group').forEach(el => el.classList.remove('has-error'));
+            document.querySelectorAll('[id$="-error-msg"]').forEach(el => el.innerHTML = '');
+            document.getElementById('error-summary-container').innerHTML = '';
+
+            const {{ hasErrors, errors }} = validateForm(scenarioId);
+
+            if (hasErrors) {{
+                // Render Errors
+                const summary = document.getElementById('error-summary-container');
+                summary.innerHTML = `
+                    <div class="error-summary">
+                        <div class="error-summary-title">${{escapeHtml(sharedUi.error_messages.form_multiple_errors)}}</div>
+                    </div>
+                `;
+
+                Object.keys(errors).forEach(key => {{
+                    const group = document.getElementById(`group-${{key}}`);
+                    if (group) group.classList.add('has-error');
+
+                    const errMsgDiv = document.getElementById(`${{key}}-error-msg`);
+                    if (errMsgDiv) {{
+                        errMsgDiv.innerHTML = `<span class="field-error">${{escapeHtml(errors[key])}}</span>`;
+                    }}
+                }});
+                return;
+            }}
+
+            // Gather values
+            const answers = {{}};
+            const s = scenarios[scenarioId];
+            s.questions.forEach(q => {{
+                if (q.type === 'radio') {{
+                    const checked = document.querySelector(`input[name="${{q.id}}"]:checked`);
+                    answers[q.id] = checked ? checked.value : '';
+                }} else if (q.type === 'number') {{
+                    const val = document.getElementById(q.id).value;
+                    answers[q.id] = val ? parseInt(val) : 0;
+                }} else {{
+                    answers[q.id] = document.getElementById(q.id).value;
+                }}
+            }});
+
+            // Switch to Loading view with steps animation
+            document.getElementById('view-form').style.display = 'none';
+            document.getElementById('view-processing').style.display = 'block';
+
+            const steps = sharedUi.processing_steps || [
+                "Reviewing the information provided",
+                "Identifying the workflow friction",
+                "Selecting a useful measurement",
+                "Checking the response for safety and quality"
+            ];
+            
+            let stepIdx = 0;
+            const stepLbl = document.getElementById('lbl-processing-step');
+            const interval = setInterval(() => {{
+                if (stepIdx < steps.length - 1) {{
+                    stepIdx++;
+                    stepLbl.textContent = steps[stepIdx];
+                }}
+            }}, 600);
+
+            try {{
+                const response = await fetch('/api/analyze', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ scenario_id: scenarioId, answers: answers }})
+                }});
+
+                clearInterval(interval);
+
+                if (!response.ok) {{
+                    throw new Error('API failure');
+                }}
+
+                const brief = await response.json();
+                renderBriefResult(brief, s);
+            }} catch (err) {{
+                clearInterval(interval);
+                document.getElementById('view-processing').style.display = 'none';
+                document.getElementById('view-form').style.display = 'block';
+                const summary = document.getElementById('error-summary-container');
+                summary.innerHTML = `
+                    <div class="error-summary">
+                        <div class="error-summary-title">Network / Service Error</div>
+                        <p class="error-summary-text">${{escapeHtml(sharedUi.error_messages.api_failure)}}</p>
+                    </div>
+                `;
+            }}
+        }}
+
+        function renderBriefResult(brief, scenarioConfig) {{
+            const container = document.getElementById('result-brief-container');
+            container.innerHTML = '';
+
+            const status = brief.brief_status;
+
+            if (status === 'REVISE' || status === 'BLOCKED') {{
+                let safeMessage = sharedUi.error_messages.blocked_request;
+                if (status === 'REVISE') {{
+                    safeMessage = "Scenario Brief was not approved or requires revision. Details withheld.";
+                }}
+
+                let revInstructionsHtml = '';
+                if (status === 'REVISE' && brief.revision_instructions) {{
+                    revInstructionsHtml = `
+                        <div class="withheld-instructions">
+                            <strong>Revision instructions:</strong> ${{escapeHtml(brief.revision_instructions)}}
+                        </div>
+                    `;
+                }}
+
+                container.innerHTML = `
+                    <div class="withheld-card">
+                        <div class="withheld-title">${{escapeHtml(status)}}</div>
+                        <p class="withheld-message">${{escapeHtml(safeMessage)}}</p>
+                        ${{revInstructionsHtml}}
+                    </div>
+                `;
+            }} else {{
+                // APPROVED or APPROVED_WITH_LIMITATION
+                let bannerHtml = '';
+                if (status === 'APPROVED_WITH_LIMITATION') {{
+                    bannerHtml = `
+                        <div class="limitation-banner">
+                            <strong>Use with caution:</strong> ${{escapeHtml(config.required_disclosures.approved_with_limitation_banner)}}
+                        </div>
+                    `;
+                }}
+
+                // Redaction banner
+                let redactionHtml = '';
+                if (brief.redaction?.applied) {{
+                    const categories = brief.redaction.categories.join(', ');
+                    redactionHtml = `
+                        <div class="limitation-banner" style="background-color: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); color: #fca5a5; margin-bottom: 24px;">
+                            <strong>Privacy Redaction Applied:</strong> Sanitize triggered for categories: [${{escapeHtml(categories)}}].
+                        </div>
+                    `;
+                }}
+
+                // Assumptions list
+                let assumptionsListHtml = '';
+                if (brief.assumptions && brief.assumptions.length > 0) {{
+                    const listItems = brief.assumptions.map(a => `<li>${{escapeHtml(a)}}</li>`).join('');
+                    assumptionsListHtml = `<ul class="brief-bullets">${{listItems}}</ul>`;
+                }} else {{
+                    assumptionsListHtml = '<p>None.</p>';
+                }}
+
+                // Unknowns list
+                let unknownsListHtml = '';
+                if (brief.unknowns && brief.unknowns.length > 0) {{
+                    const listItems = brief.unknowns.map(u => `<li>${{escapeHtml(u)}}</li>`).join('');
+                    unknownsListHtml = `<ul class="brief-bullets">${{listItems}}</ul>`;
+                }} else {{
+                    unknownsListHtml = '<p>None.</p>';
+                }}
+
+                // Measurement unit and Period
+                const m = brief.measurement || {{}};
+
+                // CTA
+                const cta = brief.episode_cta || {{}};
+
+                container.innerHTML = `
+                    <div class="brief-card">
+                        <div class="brief-header">
+                            <div class="brief-title">${{escapeHtml(brief.scenario_title)}}</div>
+                            <span class="badge" style="${{status === 'APPROVED' ? 'background-color: rgba(16, 185, 129, 0.15); color: #34d399;' : 'background-color: rgba(245, 158, 11, 0.15); color: #fbbf24;'}}">${{escapeHtml(status)}}</span>
+                        </div>
+
+                        ${{bannerHtml}}
+                        ${{redactionHtml}}
+
+                        <div class="brief-section">
+                            <div class="brief-section-title">What We Heard</div>
+                            <div class="brief-text">${{escapeHtml(brief.what_we_heard)}}</div>
+                        </div>
+
+                        <div class="brief-section">
+                            <div class="brief-section-title">Where Friction May Be Occurring</div>
+                            <div class="brief-text">${{escapeHtml(brief.where_friction_may_be_occurring)}}</div>
+                        </div>
+
+                        <div class="brief-section">
+                            <div class="brief-section-title">Assumptions</div>
+                            ${{assumptionsListHtml}}
+                        </div>
+
+                        <div class="brief-section">
+                            <div class="brief-section-title">One Next Step</div>
+                            <div class="brief-text"><strong>${{escapeHtml(brief.one_next_step)}}</strong></div>
+                        </div>
+
+                        <div class="brief-section">
+                            <div class="brief-section-title">Why This Step</div>
+                            <div class="brief-text">${{escapeHtml(brief.why_this_step)}}</div>
+                        </div>
+
+                        <div class="brief-section">
+                            <div class="brief-section-title">Recommended Measurement</div>
+                            <div class="metrics-grid">
+                                <div class="metric-card">
+                                    <span class="metric-label">Observation Metric</span>
+                                    <span class="metric-value" style="font-size: 1.15rem;">${{escapeHtml(m.name)}}</span>
+                                </div>
+                                <div class="metric-card">
+                                    <span class="metric-label">Baseline Value</span>
+                                    <span class="metric-value">${{escapeHtml(m.baseline_display)}}</span>
+                                    <span class="metric-sub">Strength: ${{escapeHtml(m.evidence_strength)}}</span>
+                                </div>
+                            </div>
+                            <div style="margin-top: 16px; font-size: 0.95rem; color: var(--text-secondary);">
+                                <strong>Measurement Period:</strong> ${{escapeHtml(m.period)}}<br>
+                                <strong>How to Track:</strong> ${{escapeHtml(m.calculation_method)}}
+                            </div>
+                        </div>
+
+                        <div class="brief-section">
+                            <div class="brief-section-title">Unknowns</div>
+                            ${{unknownsListHtml}}
+                        </div>
+
+                        <div class="disclosure-box">
+                            <div class="disclosure-text">
+                                <strong>Transparency Notice:</strong> ${{escapeHtml(brief.human_review_reminder)}}
+                            </div>
+                            <div class="disclosure-text">
+                                <strong>Responsible AI disclaimer:</strong> ${{escapeHtml(brief.responsible_use_limitation)}}
+                            </div>
+                            <div class="cta-card">
+                                <span class="cta-title">${{escapeHtml(cta.title)}}</span>
+                                <span class="cta-desc">${{escapeHtml(cta.description)}}</span>
+                                <a href="${{escapeHtml(cta.url)}}" target="_blank" class="cta-link">
+                                    Listen to this podcast episode &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }}
+
+            document.getElementById('view-processing').style.display = 'none';
+            document.getElementById('view-result').style.display = 'block';
+        }}
+
+        function escapeHtml(str) {{
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }}
+    </script>
 </body>
 </html>
 """
@@ -1184,3 +1921,458 @@ def render_checkpoint_page(response: dict) -> str:
 </body>
 </html>
 """
+
+
+def get_public_episode_01_config() -> dict:
+    """Legacy backward-compatible config loader for tests/older routes."""
+    config = get_public_scenario_lab_config()
+    cool_down_tax = config["scenarios"].get("cool_down_tax", {})
+    return {
+        "app": config["app"],
+        "shared_ui": config["shared_ui"],
+        "scenario": cool_down_tax
+    }
+
+def render_episode_01_page(config: dict, values: dict | None = None, errors: dict | None = None) -> str:
+    """Renders the complete Episode 01 questionnaire HTML page using config settings (legacy fallback)."""
+    app_meta = config.get("app", {})
+    shared_ui = config.get("shared_ui", {})
+    scenario = config.get("scenario") or config.get("scenarios", {}).get("cool_down_tax", {})
+
+    app_name = app_meta.get("name", "wAI Scenario Lab")
+    landing_headline = shared_ui.get("landing_headline", "")
+    landing_supporting_copy = shared_ui.get("landing_supporting_copy", "")
+    privacy_notice = shared_ui.get("privacy_notice", "")
+    transparency_notice = shared_ui.get("transparency_notice", "")
+
+    ep_title = scenario.get("title", "")
+    ep_num = scenario.get("episode_number", "01")
+    ep_desc = scenario.get("short_description", "")
+    ep_context = scenario.get("context", "")
+    ep_measure = scenario.get("measurement_preview", "")
+
+    val_dict = values or {}
+    err_dict = errors or {}
+
+    error_summary_html = ""
+    if err_dict:
+        error_summary_html = """
+        <div class="error-summary" role="alert">
+            <h3 class="error-summary-title">Please review the highlighted fields</h3>
+            <p>Some answers need attention. Review the highlighted fields and make the requested corrections.</p>
+        </div>
+        """
+
+    questions_html = ""
+    questions = scenario.get("questions", [])
+    sorted_questions = sorted(questions, key=lambda x: x.get("order", 0))
+    for q in sorted_questions:
+        q_id = q.get("id")
+        questions_html += render_question_html(q, value=val_dict.get(q_id), error=err_dict.get(q_id))
+
+    submit_label = shared_ui.get("question_submit_label", "Analyze My Scenario")
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{app_name} - {ep_title}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+        :root {{
+            --bg-color: #0b0f19;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent-color: #6366f1;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }}
+
+        body {{
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }}
+
+        .container {{
+            max-width: 720px;
+            width: 100%;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }}
+
+        .header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 20px;
+        }}
+
+        .logo {{
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }}
+
+        .badge {{
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }}
+
+        h1 {{
+            font-size: 2.25rem;
+            font-weight: 700;
+            line-height: 1.25;
+            margin-bottom: 16px;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #ffffff 0%, #d1d5db 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+
+        .lead {{
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }}
+
+        .notice-box {{
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(12px);
+        }}
+
+        .notice-title {{
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-color);
+            margin-bottom: 12px;
+        }}
+
+        .notice-item {{
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }}
+
+        .notice-item:last-child {{
+            margin-bottom: 0;
+        }}
+
+        .episode-card {{
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 40px;
+        }}
+
+        .episode-tag {{
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }}
+
+        .episode-title {{
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0 0 16px 0;
+            background: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+
+        .episode-desc {{
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }}
+
+        .episode-context {{
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            border-left: 2px solid var(--accent-color);
+            padding-left: 16px;
+            margin-bottom: 24px;
+        }}
+
+        .measurement-preview {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background-color: rgba(16, 185, 129, 0.06);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            color: #a7f3d0;
+        }}
+
+        .measurement-preview svg {{
+            color: var(--success-color);
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }}
+
+        .form-group {{
+            margin-bottom: 28px;
+        }}
+
+        label {{
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }}
+
+        .help-text {{
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }}
+
+        input[type="text"],
+        input[type="number"],
+        textarea {{
+            width: 100%;
+            padding: 14px 16px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }}
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        textarea:focus {{
+            outline: none;
+            border-color: var(--accent-color);
+            background-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }}
+
+        textarea {{
+            resize: vertical;
+            min-height: 100px;
+        }}
+
+        .radio-group {{
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }}
+
+        .radio-label {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }}
+
+        .radio-label:hover {{
+            background-color: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.15);
+        }}
+
+        .radio-label input[type="radio"] {{
+            margin: 0;
+            accent-color: var(--accent-color);
+        }}
+
+        fieldset {{
+            border: none;
+            padding: 0;
+            margin: 0;
+        }}
+
+        fieldset legend {{
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }}
+
+        .btn-submit {{
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: var(--accent-gradient);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }}
+
+        .btn-submit:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }}
+
+        .btn-submit:active {{
+            transform: translateY(0);
+        }}
+
+        .number-input-wrapper {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }}
+
+        .number-input-wrapper input {{
+            flex-grow: 1;
+        }}
+
+        .number-unit {{
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            white-space: nowrap;
+        }}
+
+        /* Error Styles */
+        .error-summary {{
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 32px;
+        }}
+
+        .error-summary-title {{
+            color: #fca5a5;
+            margin: 0 0 6px 0;
+            font-size: 1.05rem;
+            font-weight: 600;
+        }}
+
+        .error-summary p {{
+            color: var(--text-secondary);
+            margin: 0;
+            font-size: 0.9rem;
+        }}
+
+        .field-error {{
+            display: block;
+            color: #f87171;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }}
+
+        .form-group.has-error input[type="text"],
+        .form-group.has-error input[type="number"],
+        .form-group.has-error textarea {{
+            border-color: rgba(239, 68, 68, 0.5);
+            background-color: rgba(239, 68, 68, 0.02);
+        }}
+
+        .form-group.has-error input[type="text"]:focus,
+        .form-group.has-error input[type="number"]:focus,
+        .form-group.has-error textarea:focus {{
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+            border-color: #ef4444;
+        }}
+
+        .form-group.has-error .radio-label {{
+            border-color: rgba(239, 68, 68, 0.3);
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <span class="logo">{app_name}</span>
+            <span class="badge">Prototype</span>
+        </header>
+
+        <main>
+            <h1>{landing_headline}</h1>
+            <p class="lead">{landing_supporting_copy}</p>
+
+            {error_summary_html}
+
+            <section class="notice-box" aria-label="Privacy and transparency">
+                <div class="notice-title">Important Notices</div>
+                <div class="notice-item"><strong>Privacy Notice:</strong> {privacy_notice}</div>
+                <div class="notice-item"><strong>Transparency Notice:</strong> {transparency_notice}</div>
+            </section>
+
+            <section class="episode-card">
+                <div class="episode-tag">Episode {ep_num}</div>
+                <h2 class="episode-title">{ep_title}</h2>
+                <p class="episode-desc">{ep_desc}</p>
+                <div class="episode-context">{ep_context}</div>
+
+                <div class="measurement-preview">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    <span>Possible measurement: <strong>{ep_measure}</strong></span>
+                </div>
+            </section>
+
+            <form method="post" action="/">
+                {questions_html}
+                <button type="submit" class="btn-submit">{submit_label}</button>
+            </form>
+        </main>
+    </div>
+</body>
+</html>
+"""
+
+

@@ -21,7 +21,7 @@ class SafetyRouterError(Exception):
 
 
 def combine_answers_for_safety_scan(workflow_payload: dict) -> str:
-    """Combines Episode 01 answer fields into a single text block for safety scan.
+    """Combines answer fields into a single text block for safety scan dynamically.
 
     Args:
         workflow_payload: Normalized workflow payload.
@@ -39,22 +39,32 @@ def combine_answers_for_safety_scan(workflow_payload: dict) -> str:
     if not isinstance(answers, dict):
         raise SafetyRouterError("Answers block must be a dictionary.")
 
-    required_answers = ["interaction_type", "frequency", "minutes_lost", "work_disrupted"]
-    for a in required_answers:
-        if a not in answers:
-            raise SafetyRouterError(f"Missing required answer field: '{a}'")
+    from app.config_loader import load_scenario_config
+    try:
+        config = load_scenario_config()
+    except Exception as e:
+        raise SafetyRouterError(f"Failed to load scenario config: {e}")
 
-    interaction_type = answers.get("interaction_type", "")
-    frequency = answers.get("frequency", "")
-    minutes_lost = str(answers.get("minutes_lost", ""))
-    work_disrupted = answers.get("work_disrupted", "")
+    scenario_id = workflow_payload.get("scenario_id")
+    scenario_config = config.get("scenarios", {}).get(scenario_id)
+    if scenario_config:
+        # Check required questions for this scenario are present in answers
+        for q in scenario_config.get("questions", []):
+            if q.get("required", False) and q.get("id") not in answers:
+                raise SafetyRouterError(f"Missing required answer key for safety scan: '{q.get('id')}'")
+    else:
+        # Fallback to hardcoded cool_down_tax required keys if scenario is not found in config (for testing)
+        required_keys = ["interaction_type", "frequency", "minutes_lost", "work_disrupted"]
+        for key in required_keys:
+            if key not in answers:
+                raise SafetyRouterError(f"Missing required answer key for safety scan: '{key}'")
 
-    return (
-        f"Interaction Type: {interaction_type}\n"
-        f"Frequency: {frequency}\n"
-        f"Minutes Lost: {minutes_lost}\n"
-        f"Work Disrupted: {work_disrupted}"
-    )
+    parts = []
+    for k, v in answers.items():
+        parts.append(f"{k}: {v}")
+
+    return "\n".join(parts)
+
 
 
 def run_deterministic_safety_precheck(workflow_payload: dict) -> dict:

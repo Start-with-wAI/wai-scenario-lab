@@ -38,9 +38,22 @@ def build_agent_1_input(workflow_payload: dict) -> dict:
     if not isinstance(answers, dict):
         raise WorkflowAdapterError("Key 'answers' must be a dictionary.")
 
-    required_answers = ["interaction_type", "frequency", "minutes_lost", "work_disrupted"]
+    from app.config_loader import load_scenario_config
+    try:
+        config = load_scenario_config()
+    except Exception as e:
+        raise WorkflowAdapterError(f"Failed to load scenario configuration: {e}")
+
+    scenario_id = workflow_payload.get("scenario_id")
+    scenario_config = config.get("scenarios", {}).get(scenario_id)
+    if not scenario_config:
+        raise WorkflowAdapterError(f"Scenario '{scenario_id}' not found in config.")
+
+    # Derive required question IDs dynamically from config
+    questions = scenario_config.get("questions", [])
+    required_answers = [q.get("id") for q in questions if q.get("required")]
     for a in required_answers:
-        if a not in answers:
+        if a not in answers or answers[a] == "":
             raise WorkflowAdapterError(f"Missing required answer key: '{a}'")
 
     context = workflow_payload["scenario_context"]
@@ -48,19 +61,14 @@ def build_agent_1_input(workflow_payload: dict) -> dict:
         raise WorkflowAdapterError("Key 'scenario_context' must be a dictionary.")
 
     return {
-        "scenario_id": workflow_payload.get("scenario_id"),
+        "scenario_id": scenario_id,
         "selected_scenario": {
             "episode_number": workflow_payload.get("episode_number"),
             "title": workflow_payload.get("scenario_title"),
             "context": context.get("context"),
             "measurement_preview": context.get("measurement_preview")
         },
-        "user_answers": {
-            "interaction_type": answers.get("interaction_type"),
-            "frequency": answers.get("frequency"),
-            "minutes_lost": answers.get("minutes_lost"),
-            "work_disrupted": answers.get("work_disrupted")
-        },
+        "user_answers": answers,
         "adapter_status": "READY_FOR_AGENT_1"
     }
 
@@ -123,8 +131,8 @@ def build_graph_transition_trace(workflow_payload: dict) -> list[dict]:
     ]
 
 
-def prepare_episode_01_workflow_adapter_response(workflow_payload: dict) -> dict:
-    """Prepares the complete response structure for the Sprint 3 checkpoint.
+def prepare_workflow_adapter_response(workflow_payload: dict) -> dict:
+    """Prepares the complete response structure for the workflow adapter checkpoint.
 
     Args:
         workflow_payload: Validated and normalized workflow payload.
@@ -158,3 +166,9 @@ def prepare_episode_01_workflow_adapter_response(workflow_payload: dict) -> dict
             "Scenario Brief rendering"
         ]
     }
+
+
+# Backward compatibility aliases for tests
+prepare_episode_01_workflow_adapter_response = prepare_workflow_adapter_response
+
+

@@ -17,12 +17,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def validate_episode_01_form(form_data: dict, scenario_config: dict) -> tuple[dict, dict]:
-    """Validates the Episode 01 questionnaire fields against the active scenario configuration.
+def validate_scenario_form(form_data: dict, scenario_config: dict) -> tuple[dict, dict]:
+    """Validates the scenario questionnaire fields against the active scenario configuration.
 
     Args:
         form_data: Raw dictionary of form submission values (usually strings).
-        scenario_config: The scenario configuration dictionary (e.g. scenarios['cool_down_tax']).
+        scenario_config: The scenario configuration dictionary.
 
     Returns:
         A tuple of (normalized_answers, field_errors), where:
@@ -74,7 +74,7 @@ def validate_episode_01_form(form_data: dict, scenario_config: dict) -> tuple[di
             else:
                 normalized_answers[q_id] = val_stripped
 
-        elif q_type == "radio":
+        elif q_type in ("radio", "select"):
             options = q.get("options", [])
             allowed_values = [opt.get("value") for opt in options]
             if val_stripped not in allowed_values:
@@ -121,25 +121,31 @@ def validate_episode_01_form(form_data: dict, scenario_config: dict) -> tuple[di
     return normalized_answers, field_errors
 
 
-def build_episode_01_workflow_payload(config: dict, normalized_answers: dict) -> dict:
-    """Builds a normalized payload used to trigger the multi-agent workflow in Sprint 3.
+def build_workflow_payload(scenario_config: dict, normalized_answers: dict) -> dict:
+    """Builds a normalized payload used to trigger the multi-agent workflow.
 
     Args:
-        config: Loaded config dictionary containing 'scenario'.
+        scenario_config: Loaded specific scenario config dictionary.
         normalized_answers: Validated and normalized user responses.
 
     Returns:
         A dictionary containing scenario metadata and normalized answers.
     """
-    scenario = config["scenario"]
     return {
-        "scenario_id": scenario.get("scenario_id"),
-        "episode_number": scenario.get("episode_number"),
-        "scenario_title": scenario.get("title"),
+        "scenario_id": scenario_config.get("scenario_id"),
+        "episode_number": scenario_config.get("episode_number"),
+        "scenario_title": scenario_config.get("title"),
         "answers": normalized_answers,
         "scenario_context": {
-            "short_description": scenario.get("short_description"),
-            "context": scenario.get("context"),
-            "measurement_preview": scenario.get("measurement_preview")
+            "short_description": scenario_config.get("short_description"),
+            "context": scenario_config.get("context"),
+            "measurement_preview": scenario_config.get("measurement_preview")
         }
     }
+
+
+# Backward compatibility aliases for tests
+validate_episode_01_form = validate_scenario_form
+build_episode_01_workflow_payload = build_workflow_payload
+
+

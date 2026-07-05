@@ -79,7 +79,7 @@ def get_public_episode_01_config() -> dict:
     }
 
 
-def render_question_html(q: dict) -> str:
+def render_question_html(q: dict, value: any = None, error: str = None) -> str:
     """Renders a single question dynamically based on its configured type."""
     q_id = q.get("id")
     q_type = q.get("type")
@@ -87,16 +87,21 @@ def render_question_html(q: dict) -> str:
     help_text = q.get("help_text", "")
     required = "required" if q.get("required") else ""
 
+    val_str = str(value) if value is not None else ""
     help_html = f'<small class="help-text">{help_text}</small>' if help_text else ""
+    error_html = f'<span class="field-error" id="{q_id}-error" role="alert">{error}</span>' if error else ""
+    aria_describedby = f'aria-describedby="{q_id}-error"' if error else ""
+    has_error_class = "has-error" if error else ""
 
     if q_type == "text":
         max_length_val = q.get("max_length")
         max_length = f'maxlength="{max_length_val}"' if max_length_val is not None else ""
         return f"""
-        <div class="form-group">
+        <div class="form-group {has_error_class}">
             <label for="{q_id}">{label}</label>
             {help_html}
-            <input type="text" id="{q_id}" name="{q_id}" {required} {max_length} placeholder="Describe briefly..." />
+            {error_html}
+            <input type="text" id="{q_id}" name="{q_id}" {required} {max_length} value="{val_str}" {aria_describedby} placeholder="Describe briefly..." />
         </div>
         """
 
@@ -104,10 +109,11 @@ def render_question_html(q: dict) -> str:
         max_length_val = q.get("max_length")
         max_length = f'maxlength="{max_length_val}"' if max_length_val is not None else ""
         return f"""
-        <div class="form-group">
+        <div class="form-group {has_error_class}">
             <label for="{q_id}">{label}</label>
             {help_html}
-            <textarea id="{q_id}" name="{q_id}" {required} {max_length} placeholder="Enter your response..."></textarea>
+            {error_html}
+            <textarea id="{q_id}" name="{q_id}" {required} {max_length} {aria_describedby} placeholder="Enter your response...">{val_str}</textarea>
         </div>
         """
 
@@ -124,11 +130,12 @@ def render_question_html(q: dict) -> str:
         unit_html = f'<span class="number-unit">{unit}</span>' if unit else ""
 
         return f"""
-        <div class="form-group">
+        <div class="form-group {has_error_class}">
             <label for="{q_id}">{label}</label>
             {help_html}
+            {error_html}
             <div class="number-input-wrapper">
-                <input type="number" id="{q_id}" name="{q_id}" {required} {min_attr} {max_attr} {step_attr} />
+                <input type="number" id="{q_id}" name="{q_id}" {required} {min_attr} {max_attr} {step_attr} value="{val_str}" {aria_describedby} />
                 {unit_html}
             </div>
         </div>
@@ -140,16 +147,18 @@ def render_question_html(q: dict) -> str:
         for opt in options:
             opt_val = opt.get("value", "")
             opt_label = opt.get("label", "")
+            checked = "checked" if val_str == opt_val else ""
             options_html += f"""
             <label class="radio-label">
-                <input type="radio" name="{q_id}" value="{opt_val}" {required} />
+                <input type="radio" name="{q_id}" value="{opt_val}" {required} {checked} />
                 <span>{opt_label}</span>
             </label>
             """
         return f"""
-        <fieldset class="form-group">
+        <fieldset class="form-group {has_error_class}">
             <legend>{label}</legend>
             {help_html}
+            {error_html}
             <div class="radio-group">
                 {options_html}
             </div>
@@ -157,15 +166,16 @@ def render_question_html(q: dict) -> str:
         """
     else:
         return f"""
-        <div class="form-group">
+        <div class="form-group {has_error_class}">
             <label for="{q_id}">{label}</label>
             {help_html}
-            <input type="text" id="{q_id}" name="{q_id}" {required} />
+            {error_html}
+            <input type="text" id="{q_id}" name="{q_id}" {required} value="{val_str}" {aria_describedby} />
         </div>
         """
 
 
-def render_episode_01_page(config: dict) -> str:
+def render_episode_01_page(config: dict, values: dict | None = None, errors: dict | None = None) -> str:
     """Renders the complete Episode 01 questionnaire HTML page using config settings."""
     app_meta = config["app"]
     shared_ui = config["shared_ui"]
@@ -183,11 +193,24 @@ def render_episode_01_page(config: dict) -> str:
     ep_context = scenario.get("context", "")
     ep_measure = scenario.get("measurement_preview", "")
 
+    val_dict = values or {}
+    err_dict = errors or {}
+
+    error_summary_html = ""
+    if err_dict:
+        error_summary_html = """
+        <div class="error-summary" role="alert">
+            <h3 class="error-summary-title">Please review the highlighted fields</h3>
+            <p>Some answers need attention. Review the highlighted fields and make the requested corrections.</p>
+        </div>
+        """
+
     questions_html = ""
     questions = scenario.get("questions", [])
     sorted_questions = sorted(questions, key=lambda x: x.get("order", 0))
     for q in sorted_questions:
-        questions_html += render_question_html(q)
+        q_id = q.get("id")
+        questions_html += render_question_html(q, value=val_dict.get(q_id), error=err_dict.get(q_id))
 
     submit_label = shared_ui.get("question_submit_label", "Analyze My Scenario")
 
@@ -501,6 +524,54 @@ def render_episode_01_page(config: dict) -> str:
             border: 1px solid var(--card-border);
             white-space: nowrap;
         }}
+
+        /* Error Styles */
+        .error-summary {{
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 32px;
+        }}
+
+        .error-summary-title {{
+            color: #fca5a5;
+            margin: 0 0 6px 0;
+            font-size: 1.05rem;
+            font-weight: 600;
+        }}
+
+        .error-summary p {{
+            color: var(--text-secondary);
+            margin: 0;
+            font-size: 0.9rem;
+        }}
+
+        .field-error {{
+            display: block;
+            color: #f87171;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }}
+
+        .form-group.has-error input[type="text"],
+        .form-group.has-error input[type="number"],
+        .form-group.has-error textarea {{
+            border-color: rgba(239, 68, 68, 0.5);
+            background-color: rgba(239, 68, 68, 0.02);
+        }}
+
+        .form-group.has-error input[type="text"]:focus,
+        .form-group.has-error input[type="number"]:focus,
+        .form-group.has-error textarea:focus {{
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+            border-color: #ef4444;
+        }}
+
+        .form-group.has-error .radio-label {{
+            border-color: rgba(239, 68, 68, 0.3);
+        }}
     </style>
 </head>
 <body>
@@ -513,6 +584,8 @@ def render_episode_01_page(config: dict) -> str:
         <main>
             <h1>{landing_headline}</h1>
             <p class="lead">{landing_supporting_copy}</p>
+
+            {error_summary_html}
 
             <section class="notice-box" aria-label="Privacy and transparency">
                 <div class="notice-title">Important Notices</div>

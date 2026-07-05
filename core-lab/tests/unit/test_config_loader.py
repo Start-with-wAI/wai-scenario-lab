@@ -175,3 +175,192 @@ class TestConfigLoader(unittest.TestCase):
         self.assertIn("minutes_lost", response.text)
         self.assertIn("work_disrupted", response.text)
 
+    def test_validation_valid_data(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        valid_data = {
+            "interaction_type": "Vendor delayed shipping",
+            "frequency": "weekly",
+            "minutes_lost": "45",
+            "work_disrupted": "Project scheduling and planning"
+        }
+        answers, errors = validate_episode_01_form(valid_data, config["scenario"])
+        self.assertEqual(errors, {})
+        self.assertEqual(answers["interaction_type"], "Vendor delayed shipping")
+        self.assertEqual(answers["frequency"], "weekly")
+        self.assertEqual(answers["minutes_lost"], 45)
+        self.assertEqual(answers["work_disrupted"], "Project scheduling and planning")
+
+    def test_validation_missing_interaction_type(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        data = {
+            "interaction_type": "",
+            "frequency": "weekly",
+            "minutes_lost": "45",
+            "work_disrupted": "Scheduling"
+        }
+        answers, errors = validate_episode_01_form(data, config["scenario"])
+        self.assertIn("interaction_type", errors)
+        self.assertIn("Please describe the type", errors["interaction_type"])
+
+    def test_validation_whitespace_only_interaction_type(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        data = {
+            "interaction_type": "    ",
+            "frequency": "weekly",
+            "minutes_lost": "45",
+            "work_disrupted": "Scheduling"
+        }
+        answers, errors = validate_episode_01_form(data, config["scenario"])
+        self.assertIn("interaction_type", errors)
+        self.assertIn("rather than spaces only", errors["interaction_type"])
+
+    def test_validation_missing_frequency(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        data = {
+            "interaction_type": "Vendor delayed shipping",
+            "frequency": "",
+            "minutes_lost": "45",
+            "work_disrupted": "Scheduling"
+        }
+        answers, errors = validate_episode_01_form(data, config["scenario"])
+        self.assertIn("frequency", errors)
+        self.assertIn("Please estimate how often", errors["frequency"])
+
+    def test_validation_invalid_frequency(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        data = {
+            "interaction_type": "Vendor delayed shipping",
+            "frequency": "invalid_frequency_option",
+            "minutes_lost": "45",
+            "work_disrupted": "Scheduling"
+        }
+        answers, errors = validate_episode_01_form(data, config["scenario"])
+        self.assertIn("frequency", errors)
+        self.assertIn("choose", errors["frequency"].lower())
+
+    def test_validation_missing_minutes_lost(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        data = {
+            "interaction_type": "Vendor delayed shipping",
+            "frequency": "weekly",
+            "minutes_lost": "",
+            "work_disrupted": "Scheduling"
+        }
+        answers, errors = validate_episode_01_form(data, config["scenario"])
+        self.assertIn("minutes_lost", errors)
+        self.assertIn("best estimate of the productive time", errors["minutes_lost"])
+
+    def test_validation_non_numeric_minutes_lost(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        data = {
+            "interaction_type": "Vendor delayed shipping",
+            "frequency": "weekly",
+            "minutes_lost": "abc",
+            "work_disrupted": "Scheduling"
+        }
+        answers, errors = validate_episode_01_form(data, config["scenario"])
+        self.assertIn("minutes_lost", errors)
+        self.assertIn("digits only", errors["minutes_lost"])
+
+    def test_validation_negative_minutes_lost(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        data = {
+            "interaction_type": "Vendor delayed shipping",
+            "frequency": "weekly",
+            "minutes_lost": "-15",
+            "work_disrupted": "Scheduling"
+        }
+        answers, errors = validate_episode_01_form(data, config["scenario"])
+        self.assertIn("minutes_lost", errors)
+        self.assertIn("0 minutes or more", errors["minutes_lost"])
+
+    def test_validation_above_max_minutes_lost(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        data = {
+            "interaction_type": "Vendor delayed shipping",
+            "frequency": "weekly",
+            "minutes_lost": "500",
+            "work_disrupted": "Scheduling"
+        }
+        answers, errors = validate_episode_01_form(data, config["scenario"])
+        self.assertIn("minutes_lost", errors)
+        self.assertIn("between 0 and 480", errors["minutes_lost"])
+
+    def test_validation_missing_work_disrupted(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        data = {
+            "interaction_type": "Vendor delayed shipping",
+            "frequency": "weekly",
+            "minutes_lost": "45",
+            "work_disrupted": ""
+        }
+        answers, errors = validate_episode_01_form(data, config["scenario"])
+        self.assertIn("work_disrupted", errors)
+        self.assertIn("work that is usually delayed", errors["work_disrupted"])
+
+    def test_validation_overlong_text(self):
+        from app.form_validation import validate_episode_01_form
+        config = get_public_episode_01_config()
+        data = {
+            "interaction_type": "A" * 501,
+            "frequency": "weekly",
+            "minutes_lost": "45",
+            "work_disrupted": "Scheduling"
+        }
+        answers, errors = validate_episode_01_form(data, config["scenario"])
+        self.assertIn("interaction_type", errors)
+        self.assertIn("fewer", errors["interaction_type"])
+
+    def test_post_route_valid(self):
+        from fastapi.testclient import TestClient
+        from app.fast_api_app import app
+        client = TestClient(app)
+        response = client.post("/", data={
+            "interaction_type": "Vendor delay",
+            "frequency": "weekly",
+            "minutes_lost": "45",
+            "work_disrupted": "Scheduling"
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Sprint 2 checkpoint: input validated and normalized", response.text)
+        self.assertIn("cool_down_tax", response.text)
+        self.assertIn("minutes_lost", response.text)
+        self.assertIn("45", response.text)
+
+    def test_post_route_invalid(self):
+        from fastapi.testclient import TestClient
+        from app.fast_api_app import app
+        client = TestClient(app)
+        response = client.post("/", data={
+            "interaction_type": "",
+            "frequency": "weekly",
+            "minutes_lost": "abc",
+            "work_disrupted": "Scheduling"
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Please describe the type", response.text)
+        self.assertIn("digits only", response.text)
+        self.assertIn("weekly", response.text)
+        self.assertIn("abc", response.text)
+        self.assertIn("Scheduling", response.text)
+
+    def test_adk_routes_remain_routable(self):
+        from fastapi.testclient import TestClient
+        from app.fast_api_app import app
+        client = TestClient(app)
+        response = client.get("/docs")
+        self.assertEqual(response.status_code, 200)
+        response = client.get("/openapi.json")
+        self.assertEqual(response.status_code, 200)
+
+

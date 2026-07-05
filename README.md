@@ -40,31 +40,43 @@ Checks privacy, scope, unsupported claims, human-review language, and release re
 
 ```text
 wai-scenario-lab/
-├── .agents/
-│   └── skills/
-├── .devcontainer/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   └── workflows/
-├── app/
-│   ├── agents/
-│   ├── components/
-│   ├── config/
-│   ├── schemas/
-│   └── services/
-├── docs/
-│   ├── architecture/
-│   ├── evaluation/
-│   └── screenshots/
-├── mcp_server/
-├── notebooks/
-├── tests/
-│   ├── features/
-│   ├── fixtures/
-│   └── unit/
-├── .env.example
+├── core-lab/
+│   ├── .agents/
+│   │   ├── skills/
+│   │   └── CONTEXT.md
+│   ├── app/
+│   │   ├── app_utils/
+│   │   └── services/
+│   ├── deployment/
+│   │   └── terraform/
+│   │       ├── shared/
+│   │       └── single-project/
+│   ├── docs/
+│   │   ├── archive/
+│   │   └── evidence/
+│   ├── mcp_server/
+│   ├── scripts/
+│   ├── tests/
+│   │   ├── eval/
+│   │   ├── integration/
+│   │   └── unit/
+│   ├── Dockerfile
+│   ├── GEMINI.md
+│   ├── README.md
+│   ├── agents-cli-manifest.yaml
+│   ├── pyproject.toml
+│   ├── uv.lock
+│   └── wai_scenario_config.json
+├── scenario-lab-demo/
+│   ├── .htaccess
+│   ├── README_SCENARIO_LAB_DEMO.md
+│   ├── index.cgi
+│   ├── main.py
+│   └── passenger_wsgi.py
 ├── .gitignore
-├── CONTRIBUTORS.md
 ├── README.md
-├── requirements.txt
-└── wai_scenario_config.json
+└── requirements.txt
+```

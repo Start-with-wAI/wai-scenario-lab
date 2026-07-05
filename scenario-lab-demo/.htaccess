@@ -1,0 +1,19 @@
+# DreamHost CGI and URL Rewriting Configuration for FastAPI Smoke Test
+
+# Enable CGI execution in this directory
+Options +ExecCGI
+AddHandler cgi-script .cgi
+
+# Serve index.cgi when accessing the root directory
+DirectoryIndex index.cgi
+
+# URL Rewriting for Routing requests to the CGI application
+RewriteEngine On
+RewriteBase /scenario-lab-demo/
+
+# If the request is for an actual file or folder, serve it directly
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Otherwise, rewrite all paths to index.cgi (e.g. /health -> index.cgi/health)
+RewriteRule ^(.*)$ index.cgi/$1 [L,QSA]

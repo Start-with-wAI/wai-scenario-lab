@@ -1,9 +1,9 @@
 [project]
 name = "core-lab"
 version = "0.1.0"
-description = ""
+description = "Config-driven multi-agent Scenario Lab for micro business workflow friction."
 authors = [
-    {name = "Your Name", email = "your@email.com"},
+    {name = "Start with wAI"},
 ]
 
 dependencies = [
@@ -16,6 +16,7 @@ dependencies = [
     "google-cloud-aiplatform[evaluation,agent-engines]>=1.156.0",
     "protobuf>=6.31.1,<7.0.0",
     "mcp>=1.28.1",
+    "python-multipart>=0.0.9",
 ]
 requires-python = ">=3.11,<3.14"
 
@@ -56,7 +57,7 @@ select = [
 ignore = ["E501", "C901", "B006"] # ignore line too long, too complex
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "frontend"]
+known-first-party = ["app", "mcp_server"]
 
 [tool.ty]
 # ty is Astral's Rust-based type checker (same team as ruff/uv)
@@ -81,7 +82,7 @@ deprecated = "ignore"
 
 [tool.codespell]
 ignore-words-list = "rouge"
-skip = "./locust_env/*,uv.lock,.venv,./frontend,**/package-lock.json"
+skip = "./locust_env/*,uv.lock,.venv,**/package-lock.json"
 
 
 [build-system]
@@ -92,8 +93,21 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 pythonpath = "."
 asyncio_default_fixture_loop_scope = "function"
+addopts = "-p no:cacheprovider"
+filterwarnings = [
+    "ignore:BaseAgentConfig is deprecated.*:DeprecationWarning",
+    "ignore:\\[EXPERIMENTAL\\].*:UserWarning:google\\.adk.*",
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated.*",
+    "ignore:You should use `Logger` instead.*:DeprecationWarning",
+    "ignore:You should use `LoggerProvider` instead.*:DeprecationWarning",
+    "ignore:You should use `ProxyLoggerProvider` instead.*:DeprecationWarning",
+    "ignore:You should use `set_logger_provider` instead.*:DeprecationWarning",
+    "ignore:Please use `import python_multipart` instead.*:PendingDeprecationWarning",
+    "ignore:Duplicate Operation ID.*:UserWarning",
+]
 
 [tool.hatch.build.targets.wheel]
-packages = ["app","frontend"]
+packages = ["app", "mcp_server"]
+
 
 

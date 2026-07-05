@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Optional, Union
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -357,7 +357,7 @@ class ScenarioBrief(BaseModel):
     scenario_title: str = Field(..., description="Title of the podcast episode scenario.")
     episode_number: str = Field(..., description="Episode number.")
     brief_status: str = Field(..., description="Must be APPROVED or APPROVED_WITH_LIMITATION.")
-    generated_at: datetime = Field(default_factory=datetime.utcnow, description="Generation timestamp.")
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Generation timestamp.")
     what_we_heard: str = Field(..., description="Sanitized, grounded recap of the user prompt.")
     where_friction_may_be_occurring: str = Field(..., description="Cautious workflow observation summary.")
     assumptions: List[str] = Field(..., max_length=2, description="List of at most two assumptions.")
@@ -443,3 +443,4 @@ class ScenarioBrief(BaseModel):
         if len(normalized.split()) > 35:
             raise ValueError("why_this_step must not exceed 35 words")
         return normalized
+

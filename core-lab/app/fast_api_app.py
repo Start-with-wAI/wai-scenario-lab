@@ -34,6 +34,13 @@ from app.app_utils.telemetry import (
     setup_telemetry,
 )
 from app.app_utils.typing import Feedback
+from fastapi.responses import HTMLResponse
+from app.config_loader import (
+    get_public_episode_01_config,
+    render_episode_01_page,
+    render_error_page,
+    ConfigLoadError,
+)
 
 load_dotenv()
 setup_telemetry()
@@ -121,6 +128,26 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
     """
     logger.log_struct(feedback.model_dump(), severity="INFO")
     return {"status": "success"}
+
+
+@app.get("/", response_class=HTMLResponse)
+def public_episode_01():
+    try:
+        config = get_public_episode_01_config()
+        return HTMLResponse(content=render_episode_01_page(config), status_code=200)
+    except ConfigLoadError as e:
+        return HTMLResponse(content=render_error_page(str(e)), status_code=500)
+    except Exception as e:
+        err_msg = f"Internal server error: {e}"
+        if hasattr(logger, "log_struct"):
+            logger.log_struct({"error": err_msg}, severity="ERROR")
+        else:
+            logging.error(err_msg)
+        return HTMLResponse(content=render_error_page("An unexpected internal server error occurred."), status_code=500)
+
+
+# Move our newly registered root route to the front of app.routes to take precedence over the ADK redirect
+app.routes.insert(0, app.routes.pop())
 
 
 # Main execution

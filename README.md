@@ -125,6 +125,23 @@ The Kaggle package still needs a public writeup under 2,500 words, a cover image
 
 Do not commit API keys, passwords, `.env` files, private customer data, or proprietary assessment material.
 
+## Public Demo
+
+The public demo is available at: [https://startwithwai.tech/laboratory/](https://startwithwai.tech/laboratory/code-lab/index.cgi/)
+
+The DreamHost deployment uses `index.cgi` as a shared-hosting compatibility entry point. The core application remains FastAPI-based, and the public demo runs through the deterministic adapter so reviewers can test the scenario flow without live Gemini credentials.
+
+## Authors and Contributors
+
+Created by Verónica Elze and Jason LaMontagne for the Kaggle Vibecoding Agents Capstone competition.
+
+Primary project focus:
+
+- [Verónica Elze](https://www.linkedin.com/in/olamic): scenario design, guided workflow structure, responsible AI framing, user experience, deployment validation, and capstone coordination.
+- [Jason LaMontagne](https://www.linkedin.com/in/jasonwlamontagne/): data strategy, measurement thinking, evaluation support, and business-value framing.
+
+The project also uses AI-assisted development and review workflows. Human authors remain responsible for final design decisions, implementation choices, and submission materials.
+
 ## Copyright
 
 Copyright 2026 Start with wAI. Prepared for the Kaggle Vibecoding Agents Capstone competition. See [NOTICE.md](NOTICE.md) for attribution details.

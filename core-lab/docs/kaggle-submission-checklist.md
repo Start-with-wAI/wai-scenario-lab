@@ -4,7 +4,7 @@
 | --- | --- | --- | --- |
 | Kaggle Writeup under 2,500 words | External Kaggle Writeup; README supports content | Pending | Must be completed in Kaggle. |
 | Media Gallery | `core-lab/docs/evidence/README.md` | Partial | Final screenshots are captured; add cover image and video. |
-| Cover image | Evidence placeholder | Pending | Do not invent. |
+| Cover image | `core-lab/docs/evidence/cover-image.png` | Ready | Use as Kaggle Writeup cover image. |
 | YouTube video <= 5 minutes | `core-lab/docs/demo-script.md` | Pending | Must be recorded and published. |
 | Public project link | GitHub repo or live demo | Pending | Live demo preferred; repo acceptable with setup docs. |
 | README | `README.md` | Ready | Final-facing root README updated. |

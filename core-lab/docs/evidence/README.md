@@ -15,7 +15,7 @@ This folder stores the judge-facing evidence for the Kaggle capstone submission.
 | `mcp-server-output.png` | MCP scenario retrieval output screenshot | Captured |
 | `graph-workflow-code.png` | Agent graph workflow code screenshot | Captured |
 | `antigravity-task-or-diff.png` | Antigravity task evidence or implementation diff screenshot | Captured |
-
+| `cover-image.png` | Kaggle Writeup cover image / Media Gallery cover art | Captured |
 | `youtube-demo-link.txt` | Public YouTube demo URL | Placeholder until final video upload |
 
 ## Notes

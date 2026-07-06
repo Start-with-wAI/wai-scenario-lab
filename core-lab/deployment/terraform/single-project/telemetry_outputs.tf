@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,3 +22,4 @@ output "telemetry_bigquery_connection_id" {
   description = "BigQuery connection ID for telemetry GCS access"
   value       = google_bigquery_connection.genai_telemetry_connection.connection_id
 }
+

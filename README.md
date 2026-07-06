@@ -125,3 +125,7 @@ The Kaggle package still needs a public writeup under 2,500 words, a cover image
 
 Do not commit API keys, passwords, `.env` files, private customer data, or proprietary assessment material.
 
+## Copyright
+
+Copyright 2026 Start with wAI. Prepared for the Kaggle Vibecoding Agents Capstone competition. See [NOTICE.md](NOTICE.md) for attribution details.
+

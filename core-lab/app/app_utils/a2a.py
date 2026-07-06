@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -133,3 +134,4 @@ async def attach_a2a_routes(
         rpc_url=rpc_path,
         extended_agent_card_url=f"{rpc_path}{EXTENDED_AGENT_CARD_PATH}",
     )
+

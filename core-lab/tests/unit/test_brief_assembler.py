@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -164,3 +165,4 @@ def test_assemble_brief_blocked_withholds_details(sample_inputs):
     assert "what_we_heard" not in brief
     assert "one_next_step" not in brief
     assert "message" in brief
+

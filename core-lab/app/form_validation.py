@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -147,5 +148,6 @@ def build_workflow_payload(scenario_config: dict, normalized_answers: dict) -> d
 # Backward compatibility aliases for tests
 validate_episode_01_form = validate_scenario_form
 build_episode_01_workflow_payload = build_workflow_payload
+
 
 

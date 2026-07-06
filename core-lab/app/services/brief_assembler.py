@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +21,7 @@ Ensures REVISE/BLOCKED paths never leak brief details.
 """
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Union
 from pydantic import BaseModel
 
@@ -32,7 +33,7 @@ from app.schemas import (
 )
 from app.services.safety import sanitize_text
 
-# TODO: Jason to refine Agent 3 measurement and Agent 4 release rules in Phase 4.
+# Measurement and release rules are enforced before assembly; unsafe paths withhold brief details.
 
 
 def assemble_brief(
@@ -114,7 +115,7 @@ def assemble_brief(
         scenario_title=scenario_config.get("title", "Scenario Title"),
         episode_number=scenario_config.get("episode_number", "00"),
         brief_status=status,
-        generated_at=datetime.utcnow(),
+        generated_at=datetime.now(UTC),
         what_we_heard=what_we_heard,
         where_friction_may_be_occurring=ana.get("friction_summary"),
         assumptions=ana.get("assumptions", []),
@@ -129,3 +130,6 @@ def assemble_brief(
     )
 
     return brief.model_dump(mode="json")
+
+
+

@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -102,7 +103,11 @@ def detect_high_risk_domain(text: str) -> dict:
     matched_keywords = []
 
     for domain, keywords in HIGH_RISK_KEYWORDS.items():
-        matches = [kw for kw in keywords if kw in normalized]
+        matches = []
+        for kw in keywords:
+            pattern = r'\b' + re.escape(kw) + r'\b'
+            if re.search(pattern, normalized):
+                matches.append(kw)
         if matches:
             flagged_domains.append(domain)
             matched_keywords.extend(matches)
@@ -169,13 +174,22 @@ def evaluate_safety_text(text: str) -> dict:
     automation_res = detect_prohibited_automation(text)
     claims_res = detect_unsupported_claims(text)
 
+    # Detect absolute certainty words
+    normalized = text.strip().casefold()
+    prohibited_words = {"definitely", "always", "guaranteed", "proven"}
+    words = set(re.findall(r"\b\w+\b", normalized))
+    has_absolute_words = bool(prohibited_words & words)
+    
+    prohibited_openings = ("the real reason", "we determined", "you definitely", "this proves", "the cause is")
+    has_prohibited_opening = any(normalized.startswith(opening) for opening in prohibited_openings)
+
     # Determine recommended release status
     # BLOCKED: if high risk domain or prohibited automation is found.
-    # REVISE: if sensitive data is found (redaction needed) or unsupported claims are present.
+    # REVISE: if sensitive data, unsupported claims, or absolute certainty words are found.
     # APPROVED: if no issues are detected.
     if risk_res["high_risk_domain_flag"] or automation_res["prohibited_automation_flag"]:
         release_status = "BLOCKED"
-    elif sensitive_res["sensitive_data_detected"] or claims_res["unsupported_claims_flag"]:
+    elif sensitive_res["sensitive_data_detected"] or claims_res["unsupported_claims_flag"] or has_absolute_words or has_prohibited_opening:
         release_status = "REVISE"
     else:
         release_status = "APPROVED"
@@ -187,5 +201,7 @@ def evaluate_safety_text(text: str) -> dict:
         "flagged_domains": risk_res["flagged_domains"],
         "prohibited_automation_flag": automation_res["prohibited_automation_flag"],
         "unsupported_claims": claims_res["unsupported_claims_flag"],
+        "has_absolute_words": has_absolute_words or has_prohibited_opening,
         "release_status": release_status
     }
+

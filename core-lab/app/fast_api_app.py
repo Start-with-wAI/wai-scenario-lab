@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,6 +35,32 @@ from app.app_utils.telemetry import (
     setup_telemetry,
 )
 from app.app_utils.typing import Feedback
+from fastapi import Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from app.config_loader import (
+    get_public_scenario_lab_config,
+    render_scenario_lab_page,
+    render_error_page,
+    render_checkpoint_page,
+    ConfigLoadError,
+    load_scenario_config,
+)
+from app.workflow_adapter import (
+    prepare_workflow_adapter_response,
+    WorkflowAdapterError,
+)
+from app.safety_router import (
+    prepare_sprint_4_safety_routing_response,
+    SafetyRouterError,
+)
+from app.terminal_output import (
+    prepare_sprint_5_terminal_output_response,
+    TerminalOutputError,
+)
+from app.form_validation import (
+    validate_scenario_form,
+    build_workflow_payload,
+)
 
 load_dotenv()
 setup_telemetry()
@@ -123,8 +150,132 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
     return {"status": "success"}
 
 
+from pydantic import BaseModel
+
+class AnalysisRequest(BaseModel):
+    scenario_id: str
+    answers: dict
+
+
+@app.get("/", response_class=HTMLResponse)
+def public_landing_page():
+    try:
+        config = get_public_scenario_lab_config()
+        return HTMLResponse(content=render_scenario_lab_page(config), status_code=200)
+    except ConfigLoadError as e:
+        return HTMLResponse(content=render_error_page(str(e)), status_code=500)
+    except Exception as e:
+        err_msg = f"Internal server error: {e}"
+        if hasattr(logger, "log_struct"):
+            logger.log_struct({"error": err_msg}, severity="ERROR")
+        else:
+            logging.error(err_msg)
+        return HTMLResponse(content=render_error_page("An unexpected internal server error occurred."), status_code=500)
+
+
+@app.post("/api/analyze")
+def api_analyze_scenario(req: AnalysisRequest):
+    """JSON API endpoint that validates scenario answers and executes the workflow."""
+    try:
+        config = load_scenario_config()
+        scenario_config = config.get("scenarios", {}).get(req.scenario_id)
+        if not scenario_config:
+            return JSONResponse(status_code=404, content={"error": f"Scenario {req.scenario_id} not found."})
+            
+        normalized_answers, field_errors = validate_scenario_form(req.answers, scenario_config)
+        if field_errors:
+            return JSONResponse(status_code=400, content={"error": "Validation failed", "field_errors": field_errors})
+            
+        from app.workflow import run_scenario_lab_sample
+        result = run_scenario_lab_sample(req.scenario_id, answers=normalized_answers)
+        return result
+    except Exception as e:
+        err_msg = f"Internal server error in API analyze: {e}"
+        if hasattr(logger, "log_struct"):
+            logger.log_struct({"error": err_msg}, severity="ERROR")
+        else:
+            logging.error(err_msg)
+        return JSONResponse(status_code=500, content={"error": "An unexpected internal server error occurred."})
+
+
+@app.post("/", response_class=HTMLResponse)
+async def public_landing_page_submit(request: Request):
+    try:
+        form_data = await request.form()
+        form_dict = {key: val for key, val in form_data.items()}
+        scenario_id = form_dict.get("scenario_id", "cool_down_tax")
+        
+        # Load configuration
+        config = load_scenario_config()
+        scenario_config = config.get("scenarios", {}).get(scenario_id)
+        if not scenario_config:
+            return HTMLResponse(content=render_error_page(f"Scenario {scenario_id} not found."), status_code=404)
+            
+        normalized_answers, field_errors = validate_scenario_form(form_dict, scenario_config)
+
+        if field_errors:
+            # Fallback legacy render if validation fails on form submit
+            legacy_config = {
+                "app": config.get("app", {}),
+                "shared_ui": config.get("shared_ui", {}),
+                "scenario": scenario_config
+            }
+            from app.config_loader import render_episode_01_page
+            html_content = render_episode_01_page(legacy_config, values=normalized_answers, errors=field_errors)
+            return HTMLResponse(content=html_content, status_code=400)
+
+        # Successful validation
+        payload = build_workflow_payload(scenario_config, normalized_answers)
+
+        # Workflow Adapter processing
+        adapter_response = prepare_workflow_adapter_response(payload)
+
+        # Safety Routing processing
+        sprint_4_response = prepare_sprint_4_safety_routing_response(payload, adapter_response)
+
+        # Terminal Output Assembly
+        sprint_5_response = prepare_sprint_5_terminal_output_response(
+            config, payload, adapter_response, sprint_4_response
+        )
+        checkpoint_html = render_checkpoint_page(sprint_5_response)
+        return HTMLResponse(content=checkpoint_html, status_code=200)
+    except ConfigLoadError as e:
+        return HTMLResponse(content=render_error_page(str(e)), status_code=500)
+    except (WorkflowAdapterError, SafetyRouterError, TerminalOutputError) as e:
+        return HTMLResponse(content=render_error_page(str(e)), status_code=400)
+    except Exception as e:
+        err_msg = f"Internal server error in POST: {e}"
+        if hasattr(logger, "log_struct"):
+            logger.log_struct({"error": err_msg}, severity="ERROR")
+        else:
+            logging.error(err_msg)
+        return HTMLResponse(content=render_error_page("An unexpected internal server error occurred."), status_code=500)
+
+
+# Safe route reordering: move GET / and POST / routes to the front of app.routes
+# to override ADK's default redirect while keeping them intact.
+_get_route = None
+_post_route = None
+for r in list(app.routes):
+    if getattr(r, "path", None) == "/":
+        if "GET" in getattr(r, "methods", []):
+            if getattr(r, "name", None) != "redirect_root_to_dev_ui":
+                _get_route = r
+                app.routes.remove(r)
+        elif "POST" in getattr(r, "methods", []):
+            _post_route = r
+            app.routes.remove(r)
+
+if _post_route:
+    app.routes.insert(0, _post_route)
+if _get_route:
+    app.routes.insert(0, _get_route)
+
+
 # Main execution
+
 if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

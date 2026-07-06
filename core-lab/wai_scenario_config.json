@@ -3,6 +3,7 @@
     "name": "wAI Scenario Lab",
     "version": "0.2.0",
     "copyright_year": 2026,
+    "copyright_holder": "Start with wAI",
     "default_locale": "en-US",
     "estimated_completion_minutes": "3-5",
     "requires_login": false,
@@ -84,7 +85,13 @@
       "APPROVED_WITH_LIMITATION",
       "REVISE",
       "BLOCKED"
-    ]
+    ],
+    "final_status_mapping": {
+      "APPROVED": "APPROVED",
+      "APPROVED_WITH_LIMITATION": "NEEDS_CLARIFICATION",
+      "REVISE": "HUMAN_REVIEW_REQUIRED",
+      "BLOCKED": "BLOCKED"
+    }
   },
   "output_constraints": {
     "what_we_heard_max_words": 75,
@@ -631,3 +638,4 @@
     }
   }
 }
+

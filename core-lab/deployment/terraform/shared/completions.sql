@@ -1,4 +1,5 @@
 -- Copyright 2026 Google LLC
+-- Modifications copyright 2026 Start with wAI.
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -205,3 +206,4 @@ WHERE cross_trace_row_num = 1
   -- Exclude assistant messages echoed back as input context (already captured as output)
   AND NOT (message_type = 'input' AND role = 'assistant')
 ORDER BY conversation_id ASC, timestamp ASC, message_type ASC, message_idx ASC, part_idx ASC
+

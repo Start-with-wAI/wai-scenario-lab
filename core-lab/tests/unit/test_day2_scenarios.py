@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -149,3 +150,4 @@ class TestDay2Scenarios(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["brief_status"], "BLOCKED")
+

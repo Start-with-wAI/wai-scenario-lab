@@ -15,17 +15,19 @@
 | Security features | `core-lab/app/services/safety.py`, `core-lab/docs/responsible-ai.md` | Ready | Deterministic safety checks documented. |
 | Deployability | `core-lab/Dockerfile`, `core-lab/deployment/`, README commands | Partial | Verify public demo or present local reproducibility. |
 | Agent skills | `core-lab/.agents/skills/` | Ready | Five concise skill folders exist. |
-| Tests | `core-lab/tests/`, `core-lab/docs/final-test-results.md` | Ready | Latest local run: `97 passed, 4 skipped in 18.10s`. |
+| Tests | `core-lab/tests/`, `core-lab/docs/final-test-results.md` | Ready | Latest local run: `97 passed, 4 skipped in 19.63s`. |
 | Evaluation results | `core-lab/docs/evaluation/evaluation-results.md` | Ready | 18 cases mapped. |
 | No secrets | `.gitignore`, safety scan, no `.env` committed | Ready with caveat | Root requirements local path fixed; rerun scan before submission. |
 | One Kaggle submission per team | Rules checklist | Team action | Team lead must confirm in Kaggle. |
 | Team size <= 5 | Rules checklist | Team action | Confirm official team roster. |
 | No multiple Kaggle accounts | Rules checklist | Team action | Confirm each participant uses one account. |
 | No private code sharing outside team | Rules checklist | Team action | Keep repo/share path official. |
-| License compatibility | `pyproject.toml`, dependency list | Needs final review | Confirm final repo license and third-party licenses. |
+| License compatibility | `NOTICE.md`, `pyproject.toml`, dependency list | Needs final review | wAI copyright notice added; confirm final repo license and third-party licenses. |
 | CC-BY 4.0 winner implications | Rules source reviewed | Team action | Be prepared to license winning submission accordingly. |
-| Reproducible code and docs | README, requirements, pyproject, `pip check` | Ready with caveat | Existing venv dependency check passes; fresh clean-environment install is still recommended before submission. |
+| Reproducible code and docs | README, requirements, pyproject, fresh venv test, `pip check` | Ready | Fresh environment install, dependency check, and local tests passed. |
 | No proprietary/restricted data | Config uses fictional scenarios | Ready | Do not add private client data. |
+
+
 
 
 

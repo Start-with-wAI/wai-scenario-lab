@@ -11,7 +11,7 @@ Environment: Windows PowerShell, repository path `wai-scenario-lab/core-lab`
 | `python -m compileall app mcp_server scripts tests` | Pass | Compiled app, MCP server, scripts, and tests successfully. |
 | `python -m pytest tests/unit tests/integration` | Fail in global Python | Collection failed because global Python did not have the `mcp` package installed. This was an environment dependency issue, not a test assertion failure. |
 | `.\.venv\Scripts\python.exe --version` | Pass | Project virtual environment Python is `3.13.14`. |
-| `.\.venv\Scripts\python.exe -m pytest tests/unit tests/integration` | Pass | Latest run: `97 passed, 4 skipped in 18.10s`. |
+| `.\.venv\Scripts\python.exe -m pytest tests/unit tests/integration` | Pass | Latest run: `97 passed, 4 skipped in 19.63s`. |
 | `.\.venv\Scripts\python.exe scripts\run_sample_brief.py` | Pass | Produced an approved Cool Down Tax Scenario Brief through local deterministic workflow. |
 | `.\.venv\Scripts\python.exe -m pip check` | Pass | `No broken requirements found.` |
 
@@ -49,7 +49,7 @@ After moving unused historical docs and the legacy standalone demo scaffold into
 
 | Command | Result | Notes |
 | --- | --- | --- |
-| `.\.venv\Scripts\python.exe -m pytest tests/unit tests/integration` | Pass | `97 passed, 4 skipped in 18.10s`. |
+| `.\.venv\Scripts\python.exe -m pytest tests/unit tests/integration` | Pass | `97 passed, 4 skipped in 19.63s`. |
 | `.\.venv\Scripts\python.exe -m pip check` | Pass | `No broken requirements found.` |
 
 A scan of active docs excluding `core-lab/docs/archive/**` found no remaining absolute local file URLs, local Windows user paths, or localhost URLs in judge-facing documentation.
@@ -58,5 +58,17 @@ A scan of active docs excluding `core-lab/docs/archive/**` found no remaining ab
 
 - Live ADK/Gemini graph execution still requires credentials and Google Cloud setup; local deterministic graph simulation is what passed.
 - Final Kaggle writeup, cover image, YouTube video, and public project link must still be completed outside the automated test suite.
-- A brand-new clean environment install is still recommended before submission, although the existing project virtual environment now passes `pip check`.
+- Brand-new clean environment install was verified on 2026-07-05.
+## Fresh Environment Reproducibility Verification
+
+A brand-new throwaway virtual environment was created under `.repro-check/`, dependencies were installed from the root `requirements.txt`, dependency consistency was checked, and the unit/integration suite was run from `core-lab`.
+
+| Command | Result | Notes |
+| --- | --- | --- |
+| `python -m venv .repro-check/venv-*` | Pass with manual `ensurepip` recovery | Sandbox temp-folder permissions blocked automatic pip bootstrap; elevated `ensurepip` restored pip in the fresh venv. |
+| `.repro-check/venv-*/Scripts/python.exe -m pip install -r requirements.txt` | Pass | Installed declared root requirements into the fresh venv. |
+| `.repro-check/venv-*/Scripts/python.exe -m pip check` | Pass | `No broken requirements found.` |
+| `.repro-check/venv-*/Scripts/python.exe -m pytest tests/unit tests/integration` | Pass | `97 passed, 4 skipped in 20.22s`. |
+
+The temporary `.repro-check/` environment was removed after verification and is not part of the submission package.
 

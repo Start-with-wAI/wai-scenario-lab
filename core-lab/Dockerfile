@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,3 +34,4 @@ ENV AGENT_VERSION=${AGENT_VERSION}
 EXPOSE 8080
 
 CMD ["uv", "run", "uvicorn", "app.fast_api_app:app", "--host", "0.0.0.0", "--port", "8080"]
+

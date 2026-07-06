@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -203,3 +204,4 @@ def evaluate_safety_text(text: str) -> dict:
         "has_absolute_words": has_absolute_words or has_prohibited_opening,
         "release_status": release_status
     }
+

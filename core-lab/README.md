@@ -49,3 +49,8 @@ GCP/Agent Platform tests are skipped unless `RUN_GCP_INTEGRATION_TESTS=1` is set
 - `docs/kaggle-submission-checklist.md`
 - `docs/demo-script.md`
 - `docs/final-test-results.md`
+
+## Copyright
+
+Copyright 2026 Start with wAI. Prepared for the Kaggle Vibecoding Agents Capstone competition. See the repository root NOTICE.md for attribution details.
+

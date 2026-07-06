@@ -104,10 +104,12 @@ filterwarnings = [
     "ignore:You should use `set_logger_provider` instead.*:DeprecationWarning",
     "ignore:Please use `import python_multipart` instead.*:PendingDeprecationWarning",
     "ignore:Duplicate Operation ID.*:UserWarning",
+    "ignore:Using `@model_validator` with mode='after' on a classmethod is deprecated.*",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["app", "mcp_server"]
+
 
 
 

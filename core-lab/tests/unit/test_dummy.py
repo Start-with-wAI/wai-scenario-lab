@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,3 +22,4 @@ data processing, and other core components of your application.
 def test_dummy() -> None:
     """Placeholder - replace with real tests."""
     assert 1 == 1
+

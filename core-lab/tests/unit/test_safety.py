@@ -1,4 +1,5 @@
 # Copyright 2026 Google LLC
+# Modifications copyright 2026 Start with wAI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -114,3 +115,4 @@ def test_evaluate_safety_text():
     # Revise case (Sensitive data or PII present)
     res_rev = evaluate_safety_text("My email is alice@gmail.com")
     assert res_rev["release_status"] == "REVISE"
+
